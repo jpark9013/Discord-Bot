@@ -1,0 +1,113 @@
+import time
+from datetime import datetime
+
+import discord
+from discord.ext import commands
+
+
+class Info(commands.Cog, name="Info"):
+    def __init__(self, bot):
+        self.bot = bot
+        global db
+        db = self.bot.db
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.command(aliases=["memberinfo"])
+    @commands.guild_only()
+    async def userinfo(self, ctx, member: discord.Member = None):
+        if not member:
+            member = ctx.author
+
+        embed = discord.Embed(colour=discord.Colour.blue(), description=member.mention)
+        embed.set_author(name=str(member), icon_url=str(member.avatar_url))
+        embed.set_thumbnail(url=str(member.avatar_url))
+        embed.add_field(name="Joined", value=member.joined_at.strftime('%m/%d/%Y, %H:%M:%S'))
+        embed.add_field(name="Registered", value=member.created_at.strftime('%m/%d/%Y, %H:%M:%S'))
+        roles = ", ".join([role.name for role in member.roles if role != ctx.guild.default_role])
+        if not roles:
+            roles = "None"
+        embed.add_field(name=f"Roles ({len(member.roles) - 1})", value=roles, inline=False)
+        permissions = []
+        if member.guild_permissions.kick_members:
+            permissions.append("Kick Members")
+        if member.guild_permissions.ban_members:
+            permissions.append("Ban Members")
+        if member.guild_permissions.administrator:
+            permissions.append("Administrator")
+        if member.guild_permissions.manage_channels:
+            permissions.append("Manage Channels")
+        if member.guild_permissions.manage_guild:
+            permissions.append("Manage Server")
+        if member.guild_permissions.view_audit_log:
+            permissions.append("View Audit Log")
+        if member.guild_permissions.manage_messages:
+            permissions.append("Manage Messages")
+        if member.guild_permissions.mention_everyone:
+            permissions.append("Mention Everyone")
+        if member.guild_permissions.mute_members:
+            permissions.append("Mute Members")
+        if member.guild_permissions.deafen_members:
+            permissions.append("Deafen Members")
+        if member.guild_permissions.move_members:
+            permissions.append("Move Members")
+        if member.guild_permissions.manage_nicknames:
+            permissions.append("Manage Nicknames")
+        if member.guild_permissions.manage_roles:
+            permissions.append("Manage Roles")
+        if member.guild_permissions.manage_webhooks:
+            permissions.append("Manage Webhooks")
+        if member.guild_permissions.manage_emojis:
+            permissions.append("Manage Emojis")
+        key_permissions = ", ".join(permissions)
+        if not key_permissions:
+            key_permissions = "None"
+        embed.add_field(name="Key Permissions", value=key_permissions, inline=False)
+
+        if member == ctx.guild.owner:
+            embed.add_field(name="Acknowledgments", value="Server Owner", inline=False)
+
+        embed.set_footer(text=f"ID: {member.id}\n"
+                              f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
+
+        await ctx.send(embed=embed)
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.command()
+    async def info(self, ctx):
+        embed = discord.Embed(colour=discord.Colour.blue(), title="Bot Info", description="A bot.")
+        embed.set_author(name=str(self.bot.user), icon_url=str(self.bot.user.avatar_url))
+        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+
+        days, remainder = divmod(time.time() - self.bot.startTime, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if days == 0:
+            uptime = f"Uptime: {int(hours)}h {int(minutes)}m {int(seconds)}s"
+        else:
+            uptime = f"Uptime: {int(days)}d {int(hours)}h {int(minutes)}m {int(seconds)}s"
+
+        embed.add_field(name="Info", value=f"{uptime}\n"
+                                           f"Currently in **{len(self.bot.guilds)}** servers\n"
+                                           f"Watching **{len(self.bot.users)}** users", inline=False)
+
+        embed.add_field(
+            name="Invite",
+            value=f"[Click me]"
+                  f"(https://discord.com/api/oauth2/authorize?client_id=718287109030543370&permissions=8&scope=bot)",
+        )
+
+        embed.add_field(
+            name="Github",
+            value="To be released",
+            inline=True
+        )
+
+        embed.add_field(
+            name="Owner",
+            value=f"{(self.bot.get_user(648741756384575509) or await self.bot.fetch_user(648741756384575509)).mention}"
+        )
+
+        embed.set_footer(text=datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+
+        await ctx.send(embed=embed)
+
