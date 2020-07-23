@@ -1,4 +1,14 @@
+# Text files
 *.txt
-*.json
+
+# JSON files
+blacklist.json
+muterole.json
+prefixes.json
+
+# DB files
 *.db
 
+# VENV/IDEA folders
+venv/
+.idea/
