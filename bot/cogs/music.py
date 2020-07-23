@@ -1,4 +1,4 @@
-# Heavy inspiration from https://github.com/Rapptz/discord.py/blob/master/examples/basic_voice.py
+# Most of this comes from https://github.com/Rapptz/discord.py/blob/master/examples/basic_voice.py
 
 import asyncio
 
