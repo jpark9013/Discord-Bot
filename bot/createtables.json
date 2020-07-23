@@ -1,0 +1,17 @@
+[
+  "create table if not exists Timestamps(GuildID int not null, MemberID int not null, Timeunmuted int, Timeunbanned int, Roles JSON, primary key(GuildID, MemberID))",
+  "create table if not exists Lock(ChannelID int not null primary key, Roles JSON)",
+  "create table if not exists Tags(GuildID int not null, MemberID int not null, TagContent text not null, Tag text not null, Uses int not null, TimeCreated text not null, ID int not null, primary key(GuildID, Tag))",
+  "create table if not exists TagUsage(GuildID int not null, MemberID int not null, Uses int not null, primary key(GuildID, MemberID))",
+  "create table if not exists Reminders(MemberID int, Reminder text not null, Time int not null, ID text not null)",
+  "create table if not exists Infractions(GuildID int not null, MemberID int not null, Infractions JSON, primary key(GuildID, MemberID))",
+  "create table if not exists Logging(GuildID int not null primary key, ChannelID int, IgnoredChannelID JSON, MemberJoined bit, MemberLeft bit, MemberBanned bit, MemberUnbanned bit, MessageEdited bit, MessageDeleted bit, BulkMessageDeletion bit, ChannelCreated bit, ChannelDeleted bit, RoleCreated bit, RoleDeleted bit, RoleUpdated bit, RoleGiven bit, RoleRemoved bit, NicknameChanged bit,  ModeratorCommandUsed bit, MemberJoinedVC bit, MemberLeftVC bit, MemberMovedToVC bit, Invites bit, Enabled bit, ShowIcon bit)",
+  "create table if not exists Ping(MemberID int not null primary key, PingList JSON not null)",
+  "create table if not exists ToDo(MemberID int not null primary key, TodoList JSON)",
+  "create table if not exists Notes(MemberID int not null primary key, NoteList JSON)",
+  "create table if not exists Blacklist(GuildID int not null primary key, Channels JSON, Words JSON)",
+  "create table if not exists JLMessage(GuildID int not null primary key, JoinMessage text, JoinMessageChannel int, LeaveMessage text, LeaveMessageChannel int)",
+  "create table if not exists Commands(MemberID int not null primary key, Uses int)",
+  "create table if not exists RoleReact(MessageID int not null primary key, RoleID int, Reaction text)",
+  "create table if not exists RoleOnJoin(GuildID int, RoleID int not null primary key)"
+]
