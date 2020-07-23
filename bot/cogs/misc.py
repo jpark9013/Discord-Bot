@@ -162,3 +162,12 @@ class Misc(commands.Cog):
                 resultstr = []
 
         await self.bot.paginate(ctx, embeds)
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.command()
+    async def botinvite(self, ctx, id: int):
+        """Generate a bot invite given the ID. It doesn't check if the ID is valid or not however."""
+
+        await send_embed(ctx,
+                         f"[Click Me](https://discord.com/oauth2/authorize?client_id={id}&scope=bot&permissions=0)",
+                         info=True)

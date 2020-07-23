@@ -104,21 +104,22 @@ class Events(commands.Cog):
                                   f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
             await send(self.bot, member.guild.id, embed, db)
 
-        cursor = await db.execute("Select RoleID from RoleOnJoin where GuildID = ?", (member.guild.id,))
-        result = await cursor.fetchall()
+        if not member.bot:
+            cursor = await db.execute("Select RoleID from RoleOnJoin where GuildID = ?", (member.guild.id,))
+            result = await cursor.fetchall()
 
-        if result:
-            # Check if they have muted role
-            roles = member.roles
+            if result:
+                # Check if they have muted role
+                roles = member.roles
 
-            for tup in result:
-                if member.guild.get_role(tup[0]):
-                    roles.append(member.guild.get_role(tup[0]))
+                for tup in result:
+                    if member.guild.get_role(tup[0]):
+                        roles.append(member.guild.get_role(tup[0]))
 
-            try:
-                await member.edit(roles=list(set(roles)))
-            except:
-                return
+                try:
+                    await member.edit(roles=list(set(roles)))
+                except:
+                    return
 
     @commands.Cog.listener()
     @commands.guild_only()

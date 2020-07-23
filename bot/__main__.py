@@ -105,26 +105,37 @@ class HumphreyGaming(commands.AutoShardedBot):
 
         await self.process_commands(message)
 
-        cursor = await self.db.execute("Select count(*) from Commands where MemberID = ?", (message.author.id,))
+    async def on_command(self, ctx):
+
+        cursor = await self.db.execute("Select count(*) from Commands where MemberID = ?", (ctx.author.id,))
         result = await cursor.fetchone()
 
         if result[0]:
-            await self.db.execute("Update Commands set Uses = Uses + 1 where MemberID = ?", (message.author.id,))
+            await self.db.execute("Update Commands set Uses = Uses + 1 where MemberID = ?", (ctx.author.id,))
             await self.db.commit()
 
         else:
-            await self.db.execute("Insert into Commands values (?, ?)", (message.author.id, 1))
+            await self.db.execute("Insert into Commands values (?, ?)", (ctx.author.id, 1))
             await self.db.commit()
 
-    async def on_command(self, ctx):
-        embed = discord.Embed(
-            colour=discord.Colour.blue(),
-            title="Command Used",
-            description=f"Guild: {ctx.guild.name} ({ctx.guild.id})\n"
-                        f"Author: {ctx.author.mention}\n"
-                        f"Channel: {ctx.channel.name} ({ctx.channel.id})\n"
-                        f"Command/Content: {ctx.message.content}"
-        )
+        if isinstance(ctx.channel, discord.DMChannel):
+            embed = discord.Embed(
+                colour=discord.Colour.blue(),
+                title="Command Used",
+                description="DMChannel\n"
+                            f"Author: {ctx.author.mention}\n"
+                            f"Command/Content: {ctx.message.content}"
+            )
+
+        else:
+            embed = discord.Embed(
+                colour=discord.Colour.blue(),
+                title="Command Used",
+                description=f"Guild: {ctx.guild.name} ({ctx.guild.id})\n"
+                            f"Author: {ctx.author.mention}\n"
+                            f"Channel: {ctx.channel.name} ({ctx.channel.id})\n"
+                            f"Command/Content: {ctx.message.content}"
+            )
 
         embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
         embed.set_footer(text=f"Time: {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")

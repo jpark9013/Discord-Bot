@@ -106,8 +106,12 @@ class Info(commands.Cog, name="Info"):
 
         embed.add_field(
             name="Github",
-            value="To be released",
-            inline=True
+            value="[Click me](https://github.com/jpark9013/HumphreyGaming)",
+        )
+
+        embed.add_field(
+            name="top.gg link",
+            value="[Vote for me here](https://top.gg/bot/718287109030543370)"
         )
 
         try:
