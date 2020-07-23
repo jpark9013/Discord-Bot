@@ -5,9 +5,13 @@
 blacklist.json
 muterole.json
 prefixes.json
+supportTicketID.json
 
 # DB files
 *.db
+
+# webm files
+*.webm
 
 # VENV/IDEA folders
 venv/
