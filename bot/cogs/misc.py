@@ -106,7 +106,7 @@ class Misc(commands.Cog):
             except Exception as e:
                 await send_embed(ctx, str(e), negative=True)
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     @commands.group(invoke_without_command=True)
     async def ping(self, ctx):
         """Returns your ping."""
@@ -157,11 +157,8 @@ class Misc(commands.Cog):
         resultstr = []
         for i, v in enumerate(reversed(result), start=1):
             resultstr.append(f"{i}. {round(v)} ms")
-            if i % 10 == 0:
-                embeds.append(to_embed("\n".join(resultstr), info=True))
+            if i % 10 == 0 or i == len(result):
+                embeds.append(await to_embed("\n".join(resultstr), info=True))
                 resultstr = []
 
         await self.bot.paginate(ctx, embeds)
-
-
-

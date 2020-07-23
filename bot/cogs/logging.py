@@ -125,7 +125,7 @@ class Logging(commands.Cog, name="Logging"):
         if channel.id not in jsonlist:
             jsonlist.append(channel.id)
 
-        await db.execute("Update Logging set ChannelID = ? and IgnoredChannelID = ? where GuildID = ?",
+        await db.execute("Update Logging set ChannelID = ?, IgnoredChannelID = ? where GuildID = ?",
                          (channel.id, json.dumps(jsonlist), ctx.guild.id))
         await db.commit()
 

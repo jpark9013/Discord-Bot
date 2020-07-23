@@ -11,7 +11,7 @@ from bot.utils.message import to_embed, send_embed
 
 
 async def no_mute_role(ctx):
-    with open("bot/muterole.json", "r") as f:
+    with open("muterole.json", "r") as f:
         dict = json.load(f)
     if str(ctx.guild.id) not in dict.keys():
         return await send_embed(ctx, "No mute role in this server set.", negative=True)
@@ -28,13 +28,10 @@ async def invalid_time(ctx, minutes):
 async def insufficient_permissions(ctx, member):
     if member == ctx.guild.owner:
         return await send_embed(ctx, "Insufficient permission to perform that action on that member.", negative=True)
-    if ctx.author == ctx.guild.owner:
-        return False
-
-    if member.top_role >= ctx.author.top_role:
+    if member.top_role.position >= ctx.author.top_role.position and ctx.author != ctx.guild.owner:
         return await send_embed(ctx, "Insufficient permission to perform that action on that member.", negative=True)
-    if member.top_role >= ctx.guild.me.top_role:
-        return await send_embed(ctx, "Bot has insufficient permission to perform tht action on that member.",
+    if member.top_role.position >= ctx.guild.me.top_role.position:
+        return await send_embed(ctx, "Bot has insufficient permission to perform that action on that member.",
                                 negative=True)
 
 
@@ -67,22 +64,22 @@ async def get_infractions(ctx, member, db):
     cursor = await db.execute("Select Infractions from Infractions where GuildID = ? and MemberID = ?",
                               (ctx.guild.id, member.id))
     result = await cursor.fetchone()
-    if not result[0]:
+    if not result:
         return []
     return json.loads(result[0])
 
 
-async def write_infractions(ctx, member, db, infractions):
+async def write_infractions(ctx, memberID, db, infractions):
     cursor = await db.execute("Select count(*) from Infractions where GuildID = ? and MemberID = ?",
-                              (ctx.guild.id, member.id))
+                              (ctx.guild.id, memberID))
     result = await cursor.fetchone()
 
     if not result[0]:
-        await db.execute("Insert into Infractions values (?, ?, ?)", (ctx.guild.id, member.id, infractions))
+        await db.execute("Insert into Infractions values (?, ?, ?)", (ctx.guild.id, memberID, infractions))
         await db.commit()
     else:
         await db.execute("Update Infractions set Infractions = ? where GuildID = ? and MemberID = ?",
-                         (infractions, ctx.guild.id, member.id))
+                         (infractions, ctx.guild.id, memberID))
         await db.commit()
 
 
@@ -101,7 +98,7 @@ class Mod(commands.Cog, name="Moderator"):
         self.check_time.start()
 
     @commands.cooldown(rate=1, per=30, type=commands.BucketType.user)
-    @commands.command(aliases=["infractions"])
+    @commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
     async def selfmute(self, ctx, minutes: float = 15):
@@ -114,7 +111,7 @@ class Mod(commands.Cog, name="Moderator"):
             return await send_embed(ctx, "Invalid number of minutes; must be between 1 and 1440, inclusive",
                                     negative=True)
 
-        with open("bot/muterole.json", "r") as f:
+        with open("muterole.json", "r") as f:
             dict = json.load(f)
 
         muterole = ctx.guild.get_role(dict[str(ctx.guild.id)])
@@ -133,7 +130,7 @@ class Mod(commands.Cog, name="Moderator"):
     async def createmuterole(self, ctx):
         """Create mute role."""
 
-        with open("bot/muterole.json", "r") as file:
+        with open("muterole.json", "r") as file:
             rolesDict = json.load(file)
 
         if str(ctx.guild.id) in rolesDict.keys():
@@ -150,7 +147,7 @@ class Mod(commands.Cog, name="Moderator"):
 
             rolesDict[str(ctx.guild.id)] = muterole.id
 
-            with open("bot/muterole.json", "w") as file:
+            with open("muterole.json", "w") as file:
                 json.dump(rolesDict, file, indent=4)
 
             await send_embed(ctx, f"Mute role successfully created, "
@@ -175,7 +172,7 @@ class Mod(commands.Cog, name="Moderator"):
             try:
 
                 rolesDict[str(ctx.guild.id)] = role.id
-                with open("bot/muterole.json", "w") as file:
+                with open("muterole.json", "w") as file:
                     json.dump(rolesDict, file, indent=4)
 
                 await ctx.send("Mute role successfully set!")
@@ -183,7 +180,7 @@ class Mod(commands.Cog, name="Moderator"):
             except Exception as e:
                 await send_embed(ctx, str(e), negative=True)
 
-        with open("bot/muterole.json", "r") as file:
+        with open("muterole.json", "r") as file:
             rolesDict = json.load(file)
 
         if role.position > discord.utils.get(ctx.guild.me.roles, managed=True).position:
@@ -213,7 +210,7 @@ class Mod(commands.Cog, name="Moderator"):
         if await invalid_time(ctx, minutes):
             return
 
-        with open("bot/cogs/muterole.json", "r") as file:
+        with open("muterole.json", "r") as file:
             rolesDict = json.load(file)
 
         if await no_mute_role(ctx):
@@ -226,17 +223,13 @@ class Mod(commands.Cog, name="Moderator"):
 
         await sql_write(ctx, member.id, minutes, db, mute=True)
 
-        try:
-            infractions = await get_infractions(ctx, member, db)
-            infractions.append(["Mute", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id, minutes])
-            await write_infractions(ctx, member, db, infractions)
+        infractions = await get_infractions(ctx, member, db)
+        infractions.append(["Mute", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id, minutes])
+        await write_infractions(ctx, member.id, db, json.dumps(infractions))
 
-            await member.edit(roles=[mute_role])
+        await member.edit(roles=[mute_role])
 
-            await action_message_send(minutes, ctx, member, "muted")
-
-        except Exception as e:
-            await send_embed(ctx, str(e), negative=True)
+        await action_message_send(minutes, ctx, member, "muted")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(ban_members=True)
@@ -267,17 +260,13 @@ class Mod(commands.Cog, name="Moderator"):
         except Exception:
             pass
 
-        try:
-            infractions = await get_infractions(ctx, member, db)
-            infractions.append(["Ban", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id, minutes])
-            await write_infractions(ctx, member, db, infractions)
+        infractions = await get_infractions(ctx, member, db)
+        infractions.append(["Ban", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id, minutes])
+        await write_infractions(ctx, member.id, db, json.dumps(infractions))
 
-            await ctx.guild.ban(member, reason=reason)
-            await action_message_send(minutes, ctx, member, "banned")
-            await sql_write(ctx, member.id, minutes, db, ban=True)
-
-        except Exception as e:
-            await send_embed(ctx, str(e), negative=True)
+        await ctx.guild.ban(member, reason=reason)
+        await action_message_send(minutes, ctx, member, "banned")
+        await sql_write(ctx, member.id, minutes, db, ban=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
@@ -287,7 +276,7 @@ class Mod(commands.Cog, name="Moderator"):
     async def unmute(self, ctx, member: discord.Member, *, reason: str = None):
         """Unmutes a member."""
 
-        with open("bot/cogs/muterole.json", "r") as file:
+        with open("muterole.json", "r") as file:
             rolesDict = json.load(file)
 
         if await no_mute_role(ctx):
@@ -306,7 +295,7 @@ class Mod(commands.Cog, name="Moderator"):
         try:
             infractions = await get_infractions(ctx, member, db)
             infractions.append(["Unmute", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, member, db, infractions)
+            await write_infractions(ctx, member.id, db, json.dumps(infractions))
 
             await member.edit(roles=[ctx.guild.get_role(roleID) for roleID in json.loads(result[0])
                                      if ctx.guild.get_role(roleID)])
@@ -332,7 +321,7 @@ class Mod(commands.Cog, name="Moderator"):
 
             infractions = await get_infractions(ctx, m, db)
             infractions.append(["Unban", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, m, db, infractions)
+            await write_infractions(ctx, m.id, db, json.dumps(infractions))
 
             await ctx.guild.unban(m, reason=reason)
             await send_embed(ctx, f"Unbanned member with ID ``{m.id}``")
@@ -356,7 +345,7 @@ class Mod(commands.Cog, name="Moderator"):
 
             infractions = await get_infractions(ctx, member, db)
             infractions.append(["Kick", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, member, db, infractions)
+            await write_infractions(ctx, member.id, db, json.dumps(infractions))
 
             await send_embed(ctx, f"{member.mention} was kicked.")
 
@@ -445,7 +434,7 @@ class Mod(commands.Cog, name="Moderator"):
             channel = ctx.channel
         cloned_channel = await channel.clone()
         await channel.delete()
-        await cloned_channel.send(embed=to_embed("Channel nuked."))
+        await cloned_channel.send(embed=await to_embed("Channel nuked."))
 
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     @commands.has_permissions(manage_messages=True)
@@ -654,7 +643,7 @@ class Mod(commands.Cog, name="Moderator"):
 
             infractions = await get_infractions(ctx, member, db)
             infractions.append(["Softban", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, member, db, infractions)
+            await write_infractions(ctx, member.id, db, json.dumps(infractions))
 
             await send_embed(ctx, "Member softbanned.")
 
@@ -673,7 +662,7 @@ class Mod(commands.Cog, name="Moderator"):
 
         infractions = await get_infractions(ctx, member, db)
         infractions.append(["Warn", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-        await write_infractions(ctx, member, db, infractions)
+        await write_infractions(ctx, member.id, db, json.dumps(infractions))
 
         await send_embed(ctx, f"Warned {member.mention}.")
 

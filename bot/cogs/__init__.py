@@ -8,6 +8,11 @@ from .events import Events
 from .logging import Logging
 from .info import Info
 from .todo import Todo
+from .help import HelpCommand
+from .errorhandler import ErrorHandler
+from .notes import Notes
+from .support import Support
+from .music import Music
 
 
 def setup(bot):
@@ -21,3 +26,8 @@ def setup(bot):
     bot.add_cog(Logging(bot))
     bot.add_cog(Info(bot))
     bot.add_cog(Todo(bot))
+    bot.add_cog(HelpCommand(bot))
+    bot.add_cog(ErrorHandler(bot))
+    bot.add_cog(Notes(bot))
+    bot.add_cog(Support(bot))
+    # bot.add_cog(Music(bot))

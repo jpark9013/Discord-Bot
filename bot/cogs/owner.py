@@ -8,16 +8,11 @@ from discord.ext import commands, tasks
 from bot.utils.message import send_embed
 
 
-class Owner(commands.Cog):
+class Owner(commands.Cog, name="Owner"):
     def __init__(self, bot):
         self.bot = bot
         global db
         db = self.bot.db
-        self.x = 0
-        self.statuses = []
-        self.autostatus = False
-        self.reverse_order = False
-        self.split = " "
 
     @commands.is_owner()
     @commands.command()
@@ -63,19 +58,19 @@ class Owner(commands.Cog):
 
     @commands.is_owner()
     @commands.command()
-    async def autostatus(self, ctx, status):
+    async def autostatus(self, ctx, *, status):
         """Autostatus the bot. Cycles through the provided name every second just like Aimware.net in CSGO. You might
         get rate limited if you put the number of seconds under 60."""
 
         try:
-            self.statuses = [status]
+            self.bot.statuses = [status]
             status = list(status)
             for i in range(len(status) - 1):
                 lastposition = status.pop()
                 status.insert(0, lastposition)
-                self.statuses.append("".join(status))
-            self.autostatus = True
-            await send_embed(ctx, f"Successfully set autostatus on {self.bot.STATUSES[0]}")
+                self.bot.statuses.append("".join(status))
+            self.bot.autostatus = True
+            await send_embed(ctx, f"Successfully set autostatus on {self.bot.statuses[0]}")
 
         except Exception as e:
             await send_embed(ctx, str(e), negative=True)
@@ -85,8 +80,8 @@ class Owner(commands.Cog):
     async def autostatusoff(self, ctx):
         """Turn autostatus on/off"""
 
-        self.autostatus = not self.autostatus
-        if self.autostatus:
+        self.bot.autostatus = not self.bot.autostatus
+        if self.bot.autostatus:
             await send_embed(ctx, "Turned autostatus on.")
         else:
             await send_embed(ctx, "Turned autostatus off.")
@@ -109,8 +104,8 @@ class Owner(commands.Cog):
     async def reversestatusorder(self, ctx):
         """Reverses status order. If it was going right, it would go left after this command, and vice versa."""
 
-        self.reverse_order = not self.reverse_order
-        if self.reverse_order:
+        self.bot.reverse_order = not self.bot.reverse_order
+        if self.bot.reverse_order:
             await send_embed(ctx, "Status now reversing.")
 
         else:
@@ -125,8 +120,8 @@ class Owner(commands.Cog):
         statuslist = statuses.split(self.bot.ON_SPLIT)
         if len(statuslist) == 1:
             return await send_embed(ctx, "You cannot have a list with only 1 entry.", negative=True)
-        self.statuses = statuslist
-        self.autostatus = True
+        self.bot.statuses = statuslist
+        self.bot.autostatus = True
         await send_embed(ctx, "Changed statuslist.")
 
     @commands.is_owner()
@@ -146,21 +141,21 @@ class Owner(commands.Cog):
     async def change_status(self):
         await self.bot.wait_until_ready()
         try:
-            if self.autostatus:
-                i = len(self.statuses) - 1 - self.x
-                await self.bot.change_presence(activity=discord.Game(self.statuses[i]))
+            if self.bot.autostatus:
+                i = len(self.bot.statuses) - 1 - self.bot.x
+                await self.bot.change_presence(activity=discord.Game(self.bot.statuses[i]))
 
-                if self.reverse_order:
-                    self.x += 1
+                if self.bot.reverse_order:
+                    self.bot.x += 1
 
                 else:
-                    self.x -= 1
+                    self.bot.x -= 1
 
-                if self.x >= len(self.statuses):
-                    self.x = 0
+                if self.bot.x >= len(self.bot.statuses):
+                    self.bot.x = 0
 
-                elif self.x < 0:
-                    self.x += len(self.statuses)
+                elif self.bot.x < 0:
+                    self.bot.x += len(self.bot.statuses)
 
         except Exception as e:
             print(e)
@@ -197,6 +192,7 @@ class Owner(commands.Cog):
 
         try:
             self.bot.reload_extension(f"{name}.cogs")
+            await send_embed(ctx, f"Reloaded extension with name ``{name}``.")
 
         except Exception as e:
             await send_embed(ctx, str(e), negative=True)
@@ -208,6 +204,7 @@ class Owner(commands.Cog):
 
         try:
             self.bot.load_extension(f"{name}.cogs")
+            await send_embed(ctx, f"Loaded extension with name ``{name}``.")
 
         except Exception as e:
             await send_embed(ctx, str(e), negative=True)
@@ -219,16 +216,22 @@ class Owner(commands.Cog):
 
         try:
             self.bot.unload_extension(f"{name}.cogs")
+            await send_embed(ctx, f"Unloaded extension with name ``{name}``.")
 
         except Exception as e:
             await send_embed(ctx, str(e), negative=True)
 
     @commands.is_owner()
     @commands.command()
-    async def blacklistguild(self, ctx, guild: discord.Guild):
+    async def blacklistguild(self, ctx, guild: int):
         """Blacklist a guild. Give its ID."""
 
-        with open("bot/blacklist.json", "r") as f:
+        guild = self.bot.get_guild(guild) or await self.bot.fetch_guild(guild)
+
+        if not guild:
+            return await send_embed(ctx, "Invalid Guild ID", negative=True)
+
+        with open("blacklist.json", "r") as f:
             blacklist = json.load(f)
 
         if guild.id in blacklist["guilds"]:
@@ -236,7 +239,7 @@ class Owner(commands.Cog):
 
         blacklist["guilds"].append(guild.id)
 
-        with open("bot/blacklist.json", "w") as f:
+        with open("blacklist.json", "w") as f:
             json.dump(blacklist, f, indent=4)
 
         await send_embed(ctx, f"Blacklisted guild with ID ``{str(guild)}``.")
@@ -253,7 +256,7 @@ class Owner(commands.Cog):
             except:
                 return await send_embed(ctx, "Member ID does not exist.", negative=True)
 
-        with open("bot/createtables.json", "r") as f:
+        with open("blacklist.json", "r") as f:
             blacklist = json.load(f)
 
         if member.id in blacklist["members"]:
@@ -261,7 +264,7 @@ class Owner(commands.Cog):
 
         blacklist["members"].append(member.id)
 
-        with open("bot/createtables.json", "w") as f:
+        with open("blacklist.json", "w") as f:
             json.dump(blacklist, f, indent=4)
 
         await send_embed(ctx, f"Successfully blacklisted member with ID ``{str(member.id)}``")
@@ -278,7 +281,7 @@ class Owner(commands.Cog):
             except:
                 return await send_embed(ctx, "Member ID does not exist.", negative=True)
 
-        with open("bot/blacklist.json", "r") as f:
+        with open("blacklist.json", "r") as f:
             blacklist = json.load(f)
 
         if member.id not in blacklist["members"]:
@@ -286,7 +289,7 @@ class Owner(commands.Cog):
 
         blacklist["members"].remove(member.id)
 
-        with open("bot/blacklist.json", "w") as f:
+        with open("blacklist.json", "w") as f:
             json.dump(blacklist, f, indent=4)
 
         await send_embed(ctx, f"Successfully unblacklisted member with ID ``{str(member.id)}``")
@@ -299,7 +302,7 @@ class Owner(commands.Cog):
         cursor = await db.execute("Select GuildID from Blacklist where GuildID = ?", (ID,))
         result = await cursor.fetchone()
 
-        with open("bot/blacklist.json", "r") as f:
+        with open("blacklist.json", "r") as f:
             blacklist = json.load(f)
 
         if ID not in blacklist["guilds"]:
@@ -307,7 +310,7 @@ class Owner(commands.Cog):
 
         blacklist["guilds"].remove(ID)
 
-        with open("bot/blacklist.json", "w") as f:
+        with open("blacklist.json", "w") as f:
             json.dump(blacklist, f, indent=4)
 
         await send_embed(ctx, f"Unblacklisted guild with ID ``{ID}``.")

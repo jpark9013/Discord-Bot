@@ -15,7 +15,7 @@ class Reminders(commands.Cog, name="Reminders"):
         self.check_reminders.start()
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @commands.group(invoke_without_context=True)
+    @commands.group(invoke_without_command=True)
     async def reminder(self, ctx):
         """Get a list of all your reminders."""
 
@@ -24,7 +24,7 @@ class Reminders(commands.Cog, name="Reminders"):
         result = await cursor.fetchall()
 
         if not result:
-            await send_embed(ctx, "You do not have any reminders.", negative=True)
+            return await send_embed(ctx, "You do not have any reminders.", negative=True)
 
         embeds = []
 
@@ -63,10 +63,10 @@ class Reminders(commands.Cog, name="Reminders"):
                 )
                 embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
 
-        await self.bot.paginate(embeds)
+        await self.bot.paginate(ctx, embeds)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @reminder.command()
+    @reminder.command(aliases=["add"])
     async def create(self, ctx, minutes: float, *, reminder: str):
         """A reminder you can create. The bot will DM you when time is up."""
 

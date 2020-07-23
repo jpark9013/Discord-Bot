@@ -15,6 +15,8 @@ class Info(commands.Cog, name="Info"):
     @commands.command(aliases=["memberinfo"])
     @commands.guild_only()
     async def userinfo(self, ctx, member: discord.Member = None):
+        """Show user info."""
+
         if not member:
             member = ctx.author
 
@@ -74,6 +76,8 @@ class Info(commands.Cog, name="Info"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command()
     async def info(self, ctx):
+        """Show bot info."""
+
         embed = discord.Embed(colour=discord.Colour.blue(), title="Bot Info", description="A bot.")
         embed.set_author(name=str(self.bot.user), icon_url=str(self.bot.user.avatar_url))
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
@@ -86,9 +90,13 @@ class Info(commands.Cog, name="Info"):
         else:
             uptime = f"Uptime: {int(days)}d {int(hours)}h {int(minutes)}m {int(seconds)}s"
 
+        cursor = await db.execute("Select sum(Uses) from Commands")
+        result = await cursor.fetchone()
+
         embed.add_field(name="Info", value=f"{uptime}\n"
                                            f"Currently in **{len(self.bot.guilds)}** servers\n"
-                                           f"Watching **{len(self.bot.users)}** users", inline=False)
+                                           f"Watching **{len(self.bot.users)-1}** users\n"
+                                           f"With **{result[0]}** commands sent", inline=False)
 
         embed.add_field(
             name="Invite",
@@ -102,12 +110,57 @@ class Info(commands.Cog, name="Info"):
             inline=True
         )
 
+        try:
+            mention = (self.bot.get_user(439228325722849290) or await self.bot.fetch_user(439228325722849290)).mention
+        except:
+            mention = (self.bot.get_user(648741756384575509) or await self.bot.fetch_user(648741756384575509)).mention
+
         embed.add_field(
             name="Owner",
-            value=f"{(self.bot.get_user(648741756384575509) or await self.bot.fetch_user(648741756384575509)).mention}"
+            value=f"{mention}"
         )
 
         embed.set_footer(text=datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
 
         await ctx.send(embed=embed)
 
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.command()
+    async def leaderboard(self, ctx):
+        """Returns the top 10 command users."""
+
+        cursor = await db.execute("Select MemberID, Uses from Commands order by Uses desc limit 10")
+        result = await cursor.fetchall()
+
+        members = []
+        for i in result:
+            member = self.bot.get_user(i[0]) or await self.bot.fetch_user(i[0])
+            if not member:
+                members.append(("Account deleted", 0))
+                await db.execute("Delete from Commands where MemberID = ?", (i[0]))
+                await db.commit()
+            else:
+                members.append((member.mention, i[1]))
+
+        for i in range(0, 10):
+            try:
+                a = members[i]
+            except:
+                members.append(("None", 0))
+
+        description = []
+
+        for index, tuple in enumerate(members, start=1):
+            description.append(f"{index}. {tuple[0]} ({tuple[1]} uses)")
+
+        embed = discord.Embed(
+            colour=discord.Colour.blue(),
+            title="Leaderboard",
+            description="\n".join(description)
+        )
+
+        embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
+        embed.set_footer(text="If there is an 'Account Deleted' entry in the leaderboard, do not worry; it has been "
+                              "deleted in the database, and will not pop up the next time you call this command.")
+
+        await ctx.send(embed=embed)

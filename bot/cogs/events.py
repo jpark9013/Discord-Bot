@@ -10,7 +10,7 @@ async def is_logging(GuildID: int, column: str, db, ChannelID: int = None):
     cursor = await db.execute(f"Select {column} from Logging where GuildID = ?", (GuildID,))
     result = await cursor.fetchone()
 
-    if not result[0]:
+    if not result:
         return False
 
     cursor = await db.execute("Select IgnoredChannelID, Enabled from Logging where GuildID = ?", (GuildID,))
@@ -51,40 +51,99 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     @commands.guild_only()
     async def on_member_join(self, member):
-        # Do check for mute role later
+        # Mute Role check
         cursor = await db.execute("Select Timeunmuted from Timestamps where MemberID = ? and GuildID = ?",
                                   (member.id, member.guild.id))
         result = await cursor.fetchone()
 
-        if result[0] > time.time():
-            with open("bot/muterole.json", "r") as f:
-                try:
-                    dict = json.load(f)
-                    roleID = dict[str(member.guild.id)]
-                    await member.edit(roles=[member.guild.get_role(roleID)])
-                except: # Role deleted, no permission, etc.
-                    pass
+        if result:
+            if result[0] > time.time():
+                with open("bot/muterole.json", "r") as f:
+                    try:
+                        dict = json.load(f)
+                        roleID = dict[str(member.guild.id)]
+                        await member.edit(roles=[member.guild.get_role(roleID)])
+                    except: # Role deleted, no permission, etc.
+                        pass
 
-        if not await is_logging(member.guild.id, "MemberJoined", db):
-            return
+        cursor = await db.execute("Select JoinMessage, JoinMessageChannel from JLMessage where GuildID = ?",
+                                  (member.guild.id,))
+        result = await cursor.fetchone()
 
-        icon_url = str(member.avatar_url)
+        try:
+            # Check if result exists
+            a = result[0]
+            a = result[1]
+            channel = self.bot.get_guild(member.guild.id).get_channel(result[1])
 
-        embed = discord.Embed(
-            colour=discord.Colour.green(),
-            description=f"{member.mention} {str(member)}"
-        )
+            embed = discord.Embed(
+                colour=discord.Colour.green(),
+                title="Member Joined",
+                description=result[0]
+            )
+            embed.set_author(name=str(member), icon_url=str(member.avatar_url))
 
-        if await is_showicon(member.guild.id, db):
-            embed.set_thumbnail(url=icon_url)
-        embed.set_author(name="Member Joined", icon_url=icon_url)
-        embed.set_footer(text=f"ID: {member.id}\n"
-                              f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
-        await send(self.bot, member.guild.id, embed, db)
+            await channel.send(embed=embed)
+
+        except:
+            pass
+
+        if await is_logging(member.guild.id, "MemberJoined", db):
+
+            icon_url = str(member.avatar_url)
+
+            embed = discord.Embed(
+                colour=discord.Colour.green(),
+                description=f"{member.mention} {str(member)}"
+            )
+
+            if await is_showicon(member.guild.id, db):
+                embed.set_thumbnail(url=icon_url)
+            embed.set_author(name="Member Joined", icon_url=icon_url)
+            embed.set_footer(text=f"ID: {member.id}\n"
+                                  f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
+            await send(self.bot, member.guild.id, embed, db)
+
+        cursor = await db.execute("Select RoleID from RoleOnJoin where GuildID = ?", (member.guild.id,))
+        result = await cursor.fetchall()
+
+        if result:
+            # Check if they have muted role
+            roles = member.roles
+
+            for tup in result:
+                if member.guild.get_role(tup[0]):
+                    roles.append(member.guild.get_role(tup[0]))
+
+            try:
+                await member.edit(roles=list(set(roles)))
+            except:
+                return
 
     @commands.Cog.listener()
     @commands.guild_only()
     async def on_member_remove(self, member):
+        cursor = await db.execute("Select LeaveMessage, LeaveMessageChannel from JLMessage where GuildID = ?",
+                                  (member.guild.id,))
+        result = await cursor.fetchone()
+
+        try:
+            a = result[0]
+            a = result[1]
+            channel = self.bot.get_guild(member.guild.id).get_channel(result[1])
+
+            embed = discord.Embed(
+                colour=discord.Colour.green(),
+                title="Member Left",
+                description=result[0]
+            )
+            embed.set_author(name=str(member), icon_url=str(member.avatar_url))
+
+            await channel.send(embed=embed)
+
+        except:
+            pass
+
         if await is_logging(member.guild.id, "MemberLeft", db):
             icon_url = str(member.avatar_url)
 
@@ -102,8 +161,8 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     @commands.guild_only()
-    async def on_member_ban(self, member):
-        if await is_logging(member.guild.id, "MemberBanned", db):
+    async def on_member_ban(self, guild, member):
+        if await is_logging(guild.id, "MemberBanned", db):
             icon_url = str(member.avatar_url)
 
             embed = discord.Embed(
@@ -111,17 +170,17 @@ class Events(commands.Cog):
                 description=f"{member.mention} {str(member)}"
             )
 
-            if await is_showicon(member.guild.id, db):
+            if await is_showicon(guild.id, db):
                 embed.set_thumbnail(url=icon_url)
             embed.set_author(name="Member Banned", icon_url=icon_url)
             embed.set_footer(text=f"ID: {member.id}\n"
                                   f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
-            await send(self.bot, member.guild.id, embed, db)
+            await send(self.bot, guild.id, embed, db)
 
     @commands.Cog.listener()
     @commands.guild_only()
-    async def on_member_unban(self, member):
-        if await is_logging(member.guild.id, "MemberUnbanned", db):
+    async def on_member_unban(self, guild, member):
+        if await is_logging(guild.id, "MemberUnbanned", db):
             icon_url = str(member.avatar_url)
 
             embed = discord.Embed(
@@ -129,12 +188,12 @@ class Events(commands.Cog):
                 description=f"{member.mention} {str(member)}"
             )
 
-            if await is_showicon(member.guild.id, db):
+            if await is_showicon(guild.id, db):
                 embed.set_thumbnail(url=icon_url)
             embed.set_author(name="Member Unbanned", icon_url=icon_url)
             embed.set_footer(text=f"ID: {member.id}\n"
                                   f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
-            await send(self.bot, member.guild.id, embed, db)
+            await send(self.bot, guild.id, embed, db)
 
     @commands.Cog.listener()
     @commands.guild_only()
@@ -261,20 +320,20 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     @commands.guild_only()
-    async def on_guild_role_update(self, role):
-        if await is_logging(role.guild.id, "RoleUpdated", db):
+    async def on_guild_role_update(self, before, after):
+        if await is_logging(after.guild.id, "RoleUpdated", db):
             embed = discord.Embed(
                 colour=discord.Colour.blue(),
-                description=f"**Role ``{role.name}`` updated.**"
+                description=f"**Role ``{after.name}`` updated.**"
             )
 
-            if await is_showicon(role.guild.id, db):
-                embed.set_thumbnail(url=str(role.guild.icon_url))
+            if await is_showicon(after.guild.id, db):
+                embed.set_thumbnail(url=str(after.guild.icon_url))
 
-            embed.set_author(name=role.guild.name, icon_url=str(role.guild.icon_url))
-            embed.set_footer(text=f"ID: {role.id}\n"
+            embed.set_author(name=after.guild.name, icon_url=str(after.guild.icon_url))
+            embed.set_footer(text=f"ID: {after.id}\n"
                                   f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
-            await send(self.bot, role.guild.id, embed, db)
+            await send(self.bot, after.guild.id, embed, db)
 
     @commands.Cog.listener()
     @commands.guild_only()
@@ -331,7 +390,7 @@ class Events(commands.Cog):
                         if await is_showicon(after.guild.id, db):
                             embed.set_thumbnail(url=str(after.avatar_url))
 
-                        embed.set_author(name=str(after), icon_url=str(after.action_url))
+                        embed.set_author(name=str(after), icon_url=str(after.avatar_url))
 
                         embed.add_field(name="Role removed", value=f"``{role.name}``")
 
@@ -440,7 +499,7 @@ class Events(commands.Cog):
             if await is_showicon(invite.guild.id, db):
                 embed.set_thumbnail(url=str(invite.guild.icon_url))
 
-            embed.set_author(name=invite.guild.name, icon_url=str(invite.guild.avatar_url))
+            embed.set_author(name=invite.guild.name, icon_url=str(invite.guild.icon_url))
 
             if invite.max_age == 0:
                 age = "Forever"
@@ -497,3 +556,31 @@ class Events(commands.Cog):
             embed.set_footer(text=f"ID: {invite.id}\n"
                                   f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
             await send(self.bot, invite.guild.id, embed, db)
+
+    @commands.Cog.listener()
+    @commands.guild_only()
+    async def on_raw_reaction_add(self, payload):
+        cursor = await db.execute("Select MessageID, RoleID, Reaction from RoleReact where MessageID = ?",
+                                  (payload.message_id,))
+        result = await cursor.fetchone()
+
+        if not result:
+            return
+
+        if result[2] != str(payload.emoji):
+            return
+
+        guild = self.bot.get_guild(payload.guild_id) or await self.bot.fetch_guild(payload.guild_id)
+
+        if not guild.get_role(result[1]):
+            await db.execute("Delete from RoleReact where RoleID = ?", (result[1]))
+            await db.commit()
+
+        member = guild.get_member(payload.user_id)
+
+        try:
+            roles = member.roles
+            roles.append(guild.get_role(result[1]))
+            await member.edit(roles=list(set(roles)))
+        except:
+            pass
