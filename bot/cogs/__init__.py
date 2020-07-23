@@ -30,4 +30,5 @@ def setup(bot):
     bot.add_cog(ErrorHandler(bot))
     bot.add_cog(Notes(bot))
     bot.add_cog(Support(bot))
+    # I'll add this back when I figure out how to install pynacl
     # bot.add_cog(Music(bot))
