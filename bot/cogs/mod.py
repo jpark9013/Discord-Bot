@@ -448,7 +448,13 @@ class Mod(commands.Cog, name="Moderator"):
             return await ctx.send(to_embed("Invalid number of messages to prune.", negative=True))
 
         await ctx.channel.purge(limit=limit + 1)
-        msg = await send_embed(ctx, f"{limit} messages deleted.")
+
+        embed = discord.Embed(
+            colour=discord.Colour.green(),
+            description=f"✅ {limit} messages deleted."
+        )
+
+        msg = await ctx.send(embed=embed)
         await asyncio.sleep(10)
         await msg.delete()
 

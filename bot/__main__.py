@@ -44,8 +44,8 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.loop.run_until_complete(self.con())
         self.session = aiohttp.ClientSession()
 
-        self.remove_command("help")
         self.load_extension("bot.cogs")
+        self.load_extension("jishaku")
 
         self.startTime = time.time()
 
