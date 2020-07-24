@@ -36,3 +36,5 @@ class ErrorHandler(commands.Cog):
             await send_embed(ctx, str(error), negative=True)
         elif isinstance(error, commands.CommandOnCooldown):
             await send_embed(ctx, str(error), negative=True)
+        elif isinstance(error, commands.NotOwner):
+            return

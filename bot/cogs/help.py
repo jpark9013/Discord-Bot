@@ -24,8 +24,11 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
         cogs = self.bot.cogs
 
         cog_names_with_commands = [i for i in cogs.keys() if cogs[i].get_commands() and i != "Owner" and i != "Jishaku"]
-        command_names = [i.qualified_name for i in self.bot.walk_commands()
+        command_names = [i.qualified_name for i in self.bot.commands
                          if i.cog and i.cog.qualified_name != "Owner" and i.cog.qualified_name != "Jishaku"]
+
+        print(cog_names_with_commands)
+        print(command_names)
 
         if not name:
             value = [f"-{i}\n" for i in cog_names_with_commands]

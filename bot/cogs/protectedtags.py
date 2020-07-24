@@ -23,9 +23,11 @@ def can_change(ctx, memberID):
         for i in reversed(member.roles):
             if i.permissions.administrator:
                 a = i.position
+                break
         for i in reversed(ctx.author.roles):
             if i.permissions.administrator:
                 b = i.position
+                break
 
         return b > a
 
@@ -42,14 +44,14 @@ def can_view(ctx, roleID):
 
     # Return whether admin role is higher or equal to author admin role
     for i in ctx.author.roles:
-        if i.administrator and i.position >= ctx.guild.get_role(roleID):
+        if i.permissions.administrator and i.position >= ctx.guild.get_role(roleID).position:
             return True
 
     # Else return if author is owner
     return ctx.author == ctx.guild.owner
 
 
-class ProtectedTags(commands.Cog, name="Tags"):
+class ProtectedTags(commands.Cog, name="ProtectedTags"):
     def __init__(self, bot):
         self.bot = bot
         global db
@@ -60,7 +62,8 @@ class ProtectedTags(commands.Cog, name="Tags"):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def protectedtag(self, ctx, *, tag: str):
-        """Get a protected tag. You must have the same administrative role"""
+        """Get a protected tag. You must have the same administrative role or higher administrative role as the creator
+        in order to use the tag."""
 
         cursor = await db.execute("Select TagContent, RoleID from ProtectedTags where GuildID = ? and Tag = ?",
                                   (ctx.guild.id, tag))
@@ -113,6 +116,7 @@ class ProtectedTags(commands.Cog, name="Tags"):
         for i in reversed(ctx.author.roles):
             if i.permissions.administrator:
                 role = i
+                break
 
         cursor = await db.execute("Select count(*) from ProtectedTags where GuildID = ? and Tag = ?",
                                   (ctx.guild.id, tag))
