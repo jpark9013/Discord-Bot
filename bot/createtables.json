@@ -15,5 +15,6 @@
   "create table if not exists RoleReact(MessageID int not null primary key, RoleID int, Reaction text, DeleteOnRemove bit)",
   "create table if not exists RoleOnJoin(GuildID int, RoleID int not null primary key)",
   "create table if not exists ProtectedTags(GuildID int not null, MemberID int not null, TagContent text not null, Tag text not null, Uses int not null, TimeCreated text not null, ID int not null, RoleID int, primary key(GuildID, Tag))",
-  "create table if not exists AutoMod(GuildID int not null primary key, AllCaps bit, FastMessageSpam bit, DiscordInvites bit, Links bit, MassMention bit, EmojiSpam bit, Spoilers bit, Selfbot bit)"
+  "create table if not exists AutoMod(GuildID int not null primary key, AllCaps bit, FastMessageSpam bit, DiscordInvites bit, Links bit, MassMention bit, EmojiSpam bit, Spoilers bit, Selfbot bit)",
+  "create table if not exists FastMessageSpam(GuildID int not null, MemberID int not null, firstTime int, Times int)"
 ]

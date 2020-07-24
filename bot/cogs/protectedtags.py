@@ -58,7 +58,7 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         db = self.bot.db
 
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, aliases=["ptag"])
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def protectedtag(self, ctx, *, tag: str):
@@ -70,10 +70,10 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchone()
 
         if not result:
-            return await send_embed(ctx, "Tag does not exist", negative=True)
+            return await send_embed(ctx, "ProtectedTag does not exist", negative=True)
 
         if not can_view(ctx, result[1]):
-            return await send_embed(ctx, "You do not have permission to view that tag.", negative=True)
+            return await send_embed(ctx, "You do not have permission to view that protectedtag.", negative=True)
 
         await db.execute("Update ProtectedTags set Uses = Uses + 1 where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         await db.commit()
@@ -102,15 +102,16 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
 
         can_create = False
 
-        if ctx.author == ctx.guild.owner:
+        if ctx.author != ctx.guild.owner:
             for i in ctx.author.roles:
                 if i.permissions.administrator:
                     can_create = True
                     break
 
         if not can_create:
-            return await send_embed(ctx, "You cannot create a tag even though you are the owner because you do not "
-                                         "share any administrator roles. You may as well create notes for yourself.",
+            return await send_embed(ctx, "You cannot create a protectedtag even though you are the owner because you "
+                                         "do not share any administrator roles. You may as well create notes for "
+                                         "yourself.",
                                     negative=True)
 
         for i in reversed(ctx.author.roles):
@@ -123,7 +124,7 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchone()
 
         if result[0]:
-            return await send_embed(ctx, "Tag already exists.", negative=True)
+            return await send_embed(ctx, "ProtectedTag already exists.", negative=True)
 
         cursor = await db.execute("Select count(*) from ProtectedTags where GuildID = ?", (ctx.guild.id,))
         result = await cursor.fetchone()
@@ -133,7 +134,7 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
                           result[0] + 1, role.id))
         await db.commit()
 
-        await send_embed(ctx, f"Created tag with name ``{tag}``.")
+        await send_embed(ctx, f"Created protectedtag with name ``{tag}``.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @protectedtag.command()
@@ -147,19 +148,19 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchone()
 
         if not result:
-            return await send_embed(ctx, "Tag does not exist.", negative=True)
+            return await send_embed(ctx, "ProtectedTag does not exist.", negative=True)
 
         if not can_view(ctx, result[1]):
-            return await send_embed(ctx, "You do not have permission to view this tag.", negative=True)
+            return await send_embed(ctx, "You do not have permission to view this protectedtag.", negative=True)
 
         if result[0] != ctx.author.id and not can_change(ctx, result[0]):
-            return await send_embed(ctx, "You do not have permission to edit this tag.", negative=True)
+            return await send_embed(ctx, "You do not have permission to edit this protectedtag.", negative=True)
 
         await db.execute("Update ProtectedTags set TagContent = ? where GuildID = ? and Tag = ?",
                          (content, ctx.guild.id, tag))
         await db.commit()
 
-        await send_embed(ctx, "Edited tag.")
+        await send_embed(ctx, "Edited protectedtag.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @protectedtag.command()
@@ -173,10 +174,10 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchone()
 
         if not result:
-            return await send_embed(ctx, "Tag does not exist.", negative=True)
+            return await send_embed(ctx, "ProtectedTag does not exist.", negative=True)
 
         if not can_view(ctx, result[4]):
-            return await send_embed(ctx, "You do not have permission to view this tag.", negative=True)
+            return await send_embed(ctx, "You do not have permission to view this protectedtag.", negative=True)
 
         embed = discord.Embed(
             title=tag,
@@ -206,19 +207,19 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchone()
 
         if not result:
-            return await send_embed(ctx, "Tag does not exist.", negative=True)
+            return await send_embed(ctx, "ProtectedTag does not exist.", negative=True)
 
         if not can_view(ctx, result[1]):
-            return await send_embed(ctx, "You do not have permission to view this tag.", negative=True)
+            return await send_embed(ctx, "You do not have permission to view this protectedtag.", negative=True)
 
         if ctx.guild.get_member(result[0]):
-            return await send_embed(ctx, "Owner of tag is still in the server", negative=True)
+            return await send_embed(ctx, "Owner of protectedtag is still in the server", negative=True)
 
         await db.execute("Update ProtectedTags set MemberID = ? where GuildID = ? and Tag = ?",
                          (ctx.author.id, ctx.guild.id, tag))
         await db.commit()
 
-        await send_embed(ctx, "Transferred tag ownership.")
+        await send_embed(ctx, "Transferred protectedtag ownership.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @protectedtag.command()
@@ -248,7 +249,7 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
                 description = []
 
         if not embeds:
-            return await send_embed(ctx, "Target member has no tags.", negative=True)
+            return await send_embed(ctx, "Target member has no protectedtags.", negative=True)
 
         await self.bot.paginate(ctx, embeds)
 
@@ -264,10 +265,10 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchone()
 
         if not result:
-            return await send_embed(ctx, "Tag does not exist", negative=True)
+            return await send_embed(ctx, "ProtectedTag does not exist", negative=True)
 
         if not can_view(ctx, result[1]):
-            return await send_embed(ctx, "You do not have permission to view this tag.", negative=True)
+            return await send_embed(ctx, "You do not have permission to view this protectedtag.", negative=True)
 
         await send_embed(ctx, discord.utils.escape_markdown(result[0]), info=True)
 
@@ -284,7 +285,7 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchall()
 
         if not result:
-            return await send_embed(ctx, "Tag with requested substring does not exist.", negative=True)
+            return await send_embed(ctx, "ProtectedTag with requested substring does not exist.", negative=True)
 
         embeds = []
         description = []
@@ -313,10 +314,10 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         result = await cursor.fetchone()
 
         if not result:
-            return await send_embed(ctx, "Tag does not exist.", negative=True)
+            return await send_embed(ctx, "ProtectedTag does not exist.", negative=True)
 
         if not can_view(ctx, result[1]):
-            return await send_embed(ctx, "You do not have permission to view this tag.", negative=True)
+            return await send_embed(ctx, "You do not have permission to view this protectedtag.", negative=True)
 
         if result[0] != ctx.author.id and not can_change(ctx, result[0]):
             return await send_embed(ctx, "You do not have permission to delete that tag.", negative=True)
@@ -324,7 +325,7 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         await db.execute("Delete from ProtectedTags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         await db.commit()
 
-        await send_embed(ctx, "Deleted tag.")
+        await send_embed(ctx, "Deleted protectedtag.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @protectedtag.command()
@@ -459,3 +460,57 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
             embed.set_footer(text="These statistics are for this server only.")
 
             await ctx.send(embed=embed)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
+    @protectedtag.command()
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    @commands.is_owner()
+    async def totag(self, ctx, *, tag: str):
+        """Convert a protected tag to a regular tag."""
+
+        cursor = await db.execute("Select TagContent from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
+        result = await cursor.fetchone()
+
+        if not result:
+            return await send_embed(ctx, "That tag does not exist.", negative=True)
+
+        cursor = await db.execute("Select count(*) from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
+        result = await cursor.fetchone()
+
+        if result[0]:
+            return await send_embed(ctx, "Tag already exists", negative=True)
+
+        cmd = self.bot.get_command("tag create")
+        await ctx.invoke(cmd, tag=tag, content=result[0])
+
+        cmd = self.bot.get_command("protectedtag delete")
+        await ctx.invoke(cmd, tag=tag)
+
+        await send_embed(ctx, "Protected Tag converted to Regular Tag.")
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
+    @protectedtag.command()
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    @commands.is_owner()
+    async def movetag(self, ctx, *, tag: str):
+        """Convert a protected tag to a regular tag without deleting the original tag."""
+
+        cursor = await db.execute("Select TagContent from ProtectedTags where GuildID = ? and Tag = ?",
+                                  (ctx.guild.id, tag))
+        result = await cursor.fetchone()
+
+        if not result:
+            return await send_embed(ctx, "That tag does not exist.", negative=True)
+
+        cursor = await db.execute("Select count(*) from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
+        result = await cursor.fetchone()
+
+        if result[0]:
+            return await send_embed(ctx, "Tag already exists", negative=True)
+
+        cmd = self.bot.get_command("tag create")
+        await ctx.invoke(cmd, tag=tag, content=result[0])
+
+        await send_embed(ctx, "Protected Tag moved to Regular Tag.")
