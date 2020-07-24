@@ -329,7 +329,7 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
             "Purple": (discord.Colour.purple(), "🟣"),
             "White": (discord.Colour.from_rgb(255, 255, 255), "⚪"),
             "Grey": (discord.Colour.from_rgb(128, 128, 128), "🔘"),
-            "Black": (discord.Colour.from_rgb(0, 0, 0), "⚫")
+            "Black": (discord.Colour.darker_grey(), "⚫")
         }
 
         ids = {}
