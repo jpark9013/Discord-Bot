@@ -269,13 +269,13 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
 
         await send_embed(ctx, "Set leave message channel.")
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @commands.command()
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.guild)
+    @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def createrolereact(self, ctx, role: discord.Role, channel: discord.TextChannel,
                               emoji: typing.Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
-                              *, text: str):
+                              deleteOnRemove: bool = True, *, text: str):
         """Create a role react message in a certain channel."""
 
         embed = discord.Embed(
@@ -289,13 +289,13 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
         msg = await channel.send(embed=embed)
         await msg.add_reaction(emoji)
 
-        await db.execute("Insert into RoleReact values (?, ?, ?)", (msg.id, role.id, str(emoji)))
+        await db.execute("Insert into RoleReact values (?, ?, ?, ?)", (msg.id, role.id, str(emoji), deleteOnRemove))
         await db.commit()
 
         await send_embed(ctx, "Created role react message.")
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @commands.command()
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.guild)
+    @commands.group()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def giveroleonjoin(self, ctx, role: discord.Role):
@@ -312,3 +312,49 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
         await db.commit()
 
         await send_embed(ctx, "Role will be given automatically to any member that joins.")
+
+    @commands.cooldown(rate=1, per=3600, type=commands.BucketType.guild)
+    @createrolereact.command()
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def rainbow(self, ctx, channel: discord.TextChannel):
+        """Create role react messages for all colors of the rainbow (ROYGBV + White, Grey, Black) """
+
+        rainbow = {
+            "Red": (discord.Colour.red(), "🔴"),
+            "Orange": (discord.Colour.orange(), "🟠"),
+            "Yellow": (discord.Colour.gold(), "🟡"),
+            "Green": (discord.Colour.green(), "🟢"),
+            "Blue": (discord.Colour.blue(), "🔵"),
+            "Purple": (discord.Colour.purple(), "🟣"),
+            "White": (discord.Colour.from_rgb(255, 255, 255), "⚪"),
+            "Grey": (discord.Colour.from_rgb(128, 128, 128), "🔘"),
+            "Black": (discord.Colour.from_rgb(0, 0, 0), "⚫")
+        }
+
+        ids = {}
+
+        for i, tup in rainbow.items():
+            role = await ctx.guild.create_role(name=i, colour=tup[0])
+            ids[i] = (role.id, tup[1])
+            try:
+                await role.edit(position=ctx.guild.me.top_role.position-2)
+            except:
+                pass
+
+        for color, tup in ids.items():
+
+            embed = discord.Embed(
+                colour=color,
+                title="React for Role",
+                description=f"React to this message for the role color **{color}**!"
+            )
+
+            msg = await channel.send(embed=embed)
+
+            await msg.add_reaction(tup[1])
+
+            await db.execute("Insert into RoleReact values (?, ?, ?, ?)", (msg.id, tup[0], tup[1], True))
+            await db.commit()
+
+        await send_embed(ctx, "Sent role react messages for all colors.")

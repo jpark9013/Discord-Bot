@@ -9,7 +9,7 @@ from bot.utils.message import send_embed
 def can_change(ctx, memberID):
     member = ctx.guild.get_member(memberID)
 
-    if ctx.author == ctx.guild.owner:
+    if ctx.author == ctx.guild.owner or ctx.author == member:
         return True
     if member == ctx.guild.owner:
         return False
@@ -197,21 +197,22 @@ class Tags(commands.Cog, name="Tags"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @tag.command()
     @commands.guild_only()
-    async def search(self, ctx, *, content: str):
-        """Search for a tag based on its content."""
+    async def search(self, ctx, *, tag: str):
+        """Search for a tag given a tag substring."""
 
-        cursor = await db.execute("Select Tag, ID from Tags where GuildID = ? and TagContent = ?",
-                                  (ctx.guild.id, content))
-        result = await cursor.fetchone()
+        statement = "Select Tag, ID from Tags where GuildID = ? and Tag like '%' || ? || '%'"
+
+        cursor = await db.execute(statement, (ctx.guild.id, tag))
+        result = await cursor.fetchall()
 
         if not result:
-            return await send_embed(ctx, "Tag with requested content does not exist.", negative=True)
+            return await send_embed(ctx, "Tag with requested substring does not exist.", negative=True)
 
         embeds = []
         description = []
         for index, lst in enumerate(result, start=1):
             description.append(f"{index}. {lst[0]} (ID: {lst[1]})")
-            if index % 10 == 0:
+            if index % 10 == 0 or index == len(result):
                 embed = discord.Embed(
                     colour=discord.Colour.blue(),
                     description="\n".join(description)
@@ -219,6 +220,8 @@ class Tags(commands.Cog, name="Tags"):
                 embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
                 embeds.append(embed)
                 description = []
+
+        await self.bot.paginate(ctx, embeds)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @tag.command()

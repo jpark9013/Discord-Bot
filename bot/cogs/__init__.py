@@ -27,7 +27,7 @@ def setup(bot):
     bot.add_cog(Info(bot))
     bot.add_cog(Todo(bot))
     bot.add_cog(HelpCommand(bot))
-    bot.add_cog(ErrorHandler(bot))
+    # bot.add_cog(ErrorHandler(bot))
     bot.add_cog(Notes(bot))
     bot.add_cog(Support(bot))
     # I'll add this back when I figure out how to install pynacl

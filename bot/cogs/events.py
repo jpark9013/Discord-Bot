@@ -585,3 +585,34 @@ class Events(commands.Cog):
             await member.edit(roles=list(set(roles)))
         except:
             pass
+
+    @commands.Cog.listener()
+    @commands.guild_only()
+    async def on_raw_reaction_remove(self, payload):
+        cursor = await db.execute("Select MessageID, RoleID, Reaction, DeleteOnRemove from RoleReact "
+                                  "where MessageID = ?", (payload.message_id,))
+        result = await cursor.fetchone()
+
+        if not result:
+            return
+
+        if result[2] != str(payload.emoji):
+            return
+
+        if not result[3]:
+            return
+
+        guild = self.bot.get_guild(payload.guild_id) or await self.bot.fetch_guild(payload.guild_id)
+
+        if not guild.get_role(result[1]):
+            await db.execute("Delete from RoleReact where RoleID = ?", (result[1]))
+            await db.commit()
+
+        member = guild.get_member(payload.user_id)
+
+        try:
+            roles = member.roles
+            roles.remove(guild.get_role(result[1]))
+            await member.edit(roles=list(set(roles)))
+        except:
+            pass
