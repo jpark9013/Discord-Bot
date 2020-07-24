@@ -13,6 +13,7 @@ from .errorhandler import ErrorHandler
 from .notes import Notes
 from .support import Support
 from .music import Music
+from .protectedtags import ProtectedTags
 
 
 def setup(bot):
@@ -32,3 +33,4 @@ def setup(bot):
     bot.add_cog(Support(bot))
     # I'll add this back when I figure out how to install pynacl
     # bot.add_cog(Music(bot))
+    bot.add_cog(ProtectedTags(bot))

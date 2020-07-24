@@ -273,6 +273,7 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def createrolereact(self, ctx, role: discord.Role, channel: discord.TextChannel,
                               emoji: typing.Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
                               deleteOnRemove: bool = True, *, text: str):
@@ -298,6 +299,7 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
     @commands.group()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def giveroleonjoin(self, ctx, role: discord.Role):
         """Give a role to any member when they join."""
 
@@ -317,6 +319,7 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
     @createrolereact.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def rainbow(self, ctx, channel: discord.TextChannel):
         """Create role react messages for all colors of the rainbow (ROYGBV + White, Grey, Black) """
 
