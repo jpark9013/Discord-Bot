@@ -14,24 +14,39 @@ def can_change(ctx, memberID):
     if member == ctx.guild.owner:
         return False
 
-    if member:
-        return ctx.author.top_role.position > member.top_role.position
+    if not ctx.author.guild_permissions.administrator:
+        return False
+    if not member.guild_permissions.administrator:
+        return True
 
-    return ctx.author.guild_permissions.administrator
+    if member:
+        for i in reversed(member.roles):
+            if i.permissions.administrator:
+                a = i.position
+        for i in reversed(ctx.author.roles):
+            if i.permissions.administrator:
+                b = i.position
+
+        return b > a
 
 
 def can_view(ctx, roleID):
     if not ctx.author.guild_permissions.administrator:
         # Because you have to be an administrator to create protected tags in the first place
         # This is just a worst case check in case one of the decos "fails" somehow, it will probably never eval to True
-        return
+        return False
 
     if not ctx.guild.get_role(roleID):
         # If the role isn't found, then if the author is an administrator then they can access the protected tag
         return True
 
-    # Return whether role is in author roles or not, or alternatively whether author is owner
-    return ctx.guild.get_role(roleID) in ctx.author.roles or ctx.author == ctx.guild.owner
+    # Return whether admin role is higher or equal to author admin role
+    for i in ctx.author.roles:
+        if i.administrator and i.position >= ctx.guild.get_role(roleID):
+            return True
+
+    # Else return if author is owner
+    return ctx.author == ctx.guild.owner
 
 
 class ProtectedTags(commands.Cog, name="Tags"):
@@ -45,7 +60,7 @@ class ProtectedTags(commands.Cog, name="Tags"):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def protectedtag(self, ctx, *, tag: str):
-        """Get a protected tag."""
+        """Get a protected tag. You must have the same administrative role"""
 
         cursor = await db.execute("Select TagContent, RoleID from ProtectedTags where GuildID = ? and Tag = ?",
                                   (ctx.guild.id, tag))

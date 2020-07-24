@@ -14,10 +14,20 @@ def can_change(ctx, memberID):
     if member == ctx.guild.owner:
         return False
 
-    if member:
-        return ctx.author.top_role.position > member.top_role.position
+    if not ctx.author.guild_permissions.administrator:
+        return False
+    if not member.guild_permissions.administrator:
+        return True
 
-    return ctx.author.guild_permissions.administrator
+    if member:
+        for i in reversed(member.roles):
+            if i.permissions.administrator:
+                a = i.position
+        for i in reversed(ctx.author.roles):
+            if i.permissions.administrator:
+                b = i.position
+
+        return b > a
 
 
 class Tags(commands.Cog, name="Tags"):
