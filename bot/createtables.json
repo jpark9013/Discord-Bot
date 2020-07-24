@@ -11,7 +11,6 @@
   "create table if not exists Notes(MemberID int not null primary key, NoteList JSON)",
   "create table if not exists Blacklist(GuildID int not null primary key, Channels JSON, Words JSON)",
   "create table if not exists JLMessage(GuildID int not null primary key, JoinMessage text, JoinMessageChannel int, LeaveMessage text, LeaveMessageChannel int)",
-  "create table if not exists Commands(MemberID int not null primary key, Uses int)",
   "create table if not exists RoleReact(MessageID int not null primary key, RoleID int, Reaction text, DeleteOnRemove bit)",
   "create table if not exists RoleOnJoin(GuildID int, RoleID int not null primary key)",
   "create table if not exists ProtectedTags(GuildID int not null, MemberID int not null, TagContent text not null, Tag text not null, Uses int not null, TimeCreated text not null, ID int not null, RoleID int, primary key(GuildID, Tag))",

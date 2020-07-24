@@ -124,7 +124,7 @@ class Misc(commands.Cog):
             result = json.loads(result[0])
             result.append(ping)
             await db.execute("Update Ping set Pinglist = ? where MemberID = ?",
-                                  (json.dumps(result), ctx.author.id))
+                             (json.dumps(result), ctx.author.id))
 
         await send_embed(ctx, f"Your ping is **{round(ping)} ms**", info=True)
 
@@ -139,7 +139,8 @@ class Misc(commands.Cog):
         if not result:
             return await send_embed(ctx, "You do not have any pings sent yet.", negative=True)
 
-        await send_embed(ctx, f"Your average ping is **{round(statistics.mean(json.loads(result[0])))}** ms.", info=True)
+        await send_embed(ctx, f"Your average ping is **{round(statistics.mean(json.loads(result[0])))}** ms.",
+                         info=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @ping.command()
@@ -165,9 +166,18 @@ class Misc(commands.Cog):
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command()
-    async def botinvite(self, ctx, id: int):
-        """Generate a bot invite given the ID. It doesn't check if the ID is valid or not however."""
+    async def botinvite(self, ctx, member: discord.Member = None):
+        """Generate a bot invite given the bot. Defaults to this bot."""
+
+        if not member:
+            return await send_embed(ctx, f"[Click me]"
+                                         f"(https://discord.com/api/oauth2/authorize?client_id=718287109030543370"
+                                         f"&permissions=8&scope=bot)")
+
+        if not member.bot:
+            return
 
         await send_embed(ctx,
-                         f"[Click Me](https://discord.com/oauth2/authorize?client_id={id}&scope=bot&permissions=0)",
+                         f"[Click Me](https://discord.com/oauth2/authorize?client_id={member.id}"
+                         f"&scope=bot&permissions=0)",
                          info=True)

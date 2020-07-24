@@ -85,7 +85,7 @@ class HumphreyGaming(commands.AutoShardedBot):
         with open("blacklist.json") as f:
             blacklist = json.load(f)
         if message.author.bot or not self.is_ready() or not self.can_send(message) or message.author.id in \
-                blacklist["members"] or message.guild.id in blacklist["guilds"]:
+                blacklist["members"] or (message.guild and message.guild.id in blacklist["guilds"]):
             return
 
         cursor = await self.db.execute("Select Channels, Words from Blacklist where GuildID = ?", (message.guild.id,))
@@ -106,17 +106,6 @@ class HumphreyGaming(commands.AutoShardedBot):
         await self.process_commands(message)
 
     async def on_command(self, ctx):
-
-        cursor = await self.db.execute("Select count(*) from Commands where MemberID = ?", (ctx.author.id,))
-        result = await cursor.fetchone()
-
-        if result[0]:
-            await self.db.execute("Update Commands set Uses = Uses + 1 where MemberID = ?", (ctx.author.id,))
-            await self.db.commit()
-
-        else:
-            await self.db.execute("Insert into Commands values (?, ?)", (ctx.author.id, 1))
-            await self.db.commit()
 
         if isinstance(ctx.channel, discord.DMChannel):
             embed = discord.Embed(

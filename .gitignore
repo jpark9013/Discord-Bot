@@ -6,6 +6,7 @@ blacklist.json
 muterole.json
 prefixes.json
 supportTicketID.json
+credentials.json
 
 # DB files
 *.db
@@ -16,3 +17,6 @@ supportTicketID.json
 # VENV/IDEA folders
 venv/
 .idea/
+
+# private py files
+bot/cogs/spreadsheet.py

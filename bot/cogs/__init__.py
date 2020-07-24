@@ -14,12 +14,13 @@ from .protectedtags import ProtectedTags
 from .reminders import Reminders
 from .tags import Tags
 from .todo import Todo
+from .spreadsheet import SpreadSheets
 from .support import Support
 
 
 def setup(bot):
     # bot.add_cog(AutoMod(bot))
-    bot.add_cog(ErrorHandler(bot))
+    # bot.add_cog(ErrorHandler(bot))
     bot.add_cog(Events(bot))
     bot.add_cog(Guild_Setup(bot))
     bot.add_cog(HelpCommand(bot))
@@ -35,4 +36,5 @@ def setup(bot):
     bot.add_cog(Reminders(bot))
     bot.add_cog(Tags(bot))
     bot.add_cog(Todo(bot))
+    bot.add_cog(SpreadSheets(bot))
     bot.add_cog(Support(bot))

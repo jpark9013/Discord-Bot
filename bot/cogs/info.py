@@ -85,18 +85,15 @@ class Info(commands.Cog, name="Info"):
         days, remainder = divmod(time.time() - self.bot.startTime, 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds = divmod(remainder, 60)
+
         if days == 0:
             uptime = f"Uptime: {int(hours)}h {int(minutes)}m {int(seconds)}s"
         else:
             uptime = f"Uptime: {int(days)}d {int(hours)}h {int(minutes)}m {int(seconds)}s"
 
-        cursor = await db.execute("Select sum(Uses) from Commands")
-        result = await cursor.fetchone()
-
         embed.add_field(name="Info", value=f"{uptime}\n"
                                            f"Currently in **{len(self.bot.guilds)}** servers\n"
-                                           f"Watching **{len(self.bot.users)-1}** users\n"
-                                           f"With **{result[0]}** commands sent", inline=False)
+                                           f"Watching **{len(self.bot.users)-1}** users\n", inline=False)
 
         embed.add_field(
             name="Invite",
@@ -125,46 +122,5 @@ class Info(commands.Cog, name="Info"):
         )
 
         embed.set_footer(text=datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
-
-        await ctx.send(embed=embed)
-
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @commands.command()
-    async def leaderboard(self, ctx):
-        """Returns the top 10 command users."""
-
-        cursor = await db.execute("Select MemberID, Uses from Commands order by Uses desc limit 10")
-        result = await cursor.fetchall()
-
-        members = []
-        for i in result:
-            member = self.bot.get_user(i[0]) or await self.bot.fetch_user(i[0])
-            if not member:
-                members.append(("Account deleted", 0))
-                await db.execute("Delete from Commands where MemberID = ?", (i[0]))
-                await db.commit()
-            else:
-                members.append((member.mention, i[1]))
-
-        for i in range(0, 10):
-            try:
-                a = members[i]
-            except:
-                members.append(("None", 0))
-
-        description = []
-
-        for index, tuple in enumerate(members, start=1):
-            description.append(f"{index}. {tuple[0]} ({tuple[1]} uses)")
-
-        embed = discord.Embed(
-            colour=discord.Colour.blue(),
-            title="Leaderboard",
-            description="\n".join(description)
-        )
-
-        embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
-        embed.set_footer(text="If there is an 'Account Deleted' entry in the leaderboard, do not worry; it has been "
-                              "deleted in the database, and will not pop up the next time you call this command.")
 
         await ctx.send(embed=embed)
