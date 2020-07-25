@@ -146,7 +146,9 @@ class Info(commands.Cog, name="Info"):
 
         descriptions = []
 
-        for i, v in json.loads(result[0]):
+        dict = json.loads(result[0])
+
+        for i, v in dict.items():
             d, remainder = divmod(v, 86400)
             h, remainder = divmod(v, 3600)
             m, s = divmod(v, 60)
@@ -155,7 +157,7 @@ class Info(commands.Cog, name="Info"):
                                 f"Time played: {d}d {h}h {m}m {s}s\n"
                                 f"")
 
-        total = sum(json.loads(result[0]).values())
+        total = sum(dict.values())
         d, remainder = divmod(total, 86400)
         h, remainder = divmod(total, 3600)
         m, s = divmod(total, 60)
@@ -173,7 +175,7 @@ class Info(commands.Cog, name="Info"):
                 )
                 embed.set_author(name=str(member), icon_url=str(member.avatar_url))
                 embed.set_footer(text=f"Total time played on all activities: {d}d {h}h {m}m {s}s\n"
-                                      f"Since 07/25/2020/ 17:21:14")
+                                      f"Since 07/25/2020/ 18:00:00")
 
                 embeds.append(embed)
                 descs = []
