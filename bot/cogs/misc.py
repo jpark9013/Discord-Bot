@@ -181,3 +181,10 @@ class Misc(commands.Cog):
                          f"[Click Me](https://discord.com/oauth2/authorize?client_id={member.id}"
                          f"&scope=bot&permissions=0)",
                          info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def reversetext(self, ctx, *, text: str):
+        """Reverse text."""
+
+        await send_embed(ctx, text[::-1], info=True)

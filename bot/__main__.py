@@ -61,9 +61,10 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.loop.run_until_complete(self.bot_start())
 
     async def bot_start(self):
-        for i in create_tables:
-            await self.db.execute(i)
-            await self.db.commit()
+        # Comment this out until I delete a table in the db file
+        # for i in create_tables:
+            # await self.db.execute(i)
+            # await self.db.commit()
 
         await self.login(TOKEN)
         await self.connect(reconnect=True)

@@ -29,7 +29,7 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
         if ctx.guild.id != 732980515807952897:
             OWNER_COG_NAMES.append("SpreadSheets")
 
-        if ctx.author != self.bot.owner:
+        if ctx.author.id != 648741756384575509:
             OWNER_COG_NAMES.append("Jishaku")
             OWNER_COG_NAMES.append("Owner")
 
