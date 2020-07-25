@@ -9,6 +9,7 @@ import discord
 # import youtube_dl
 
 from discord.ext import commands
+from bot.utils.message import to_embed
 from bot.utils.paginator import Paginator
 
 with open("token.txt", "r") as file:
@@ -76,6 +77,16 @@ class HumphreyGaming(commands.AutoShardedBot):
         print("------")
         await self.change_presence(status=discord.Status.online,
                                    activity=discord.Game(f";help"))
+
+        channel = self.get_guild(732980515807952897).get_channel(736352506669694976)
+
+        embed = discord.Embed(
+            colour=discord.Colour.green(),
+            description="Bot is online."
+        )
+        embed.set_footer(text=f"Time: {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
+
+        await channel.send(embed=embed)
 
     def can_send(self, message):
         return isinstance(message.channel, discord.DMChannel) or \

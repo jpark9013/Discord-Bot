@@ -1,6 +1,7 @@
 import asyncio
 import json
 import typing
+from datetime import datetime
 
 import discord
 from discord.ext import commands, tasks
@@ -21,6 +22,16 @@ class Owner(commands.Cog, name="Owner"):
 
         try:
             await send_embed(ctx, "Shutting down...")
+
+            channel = self.bot.get_guild(732980515807952897).get_channel(736352506669694976)
+
+            embed = discord.Embed(
+                colour=discord.Colour.red(),
+                description="Bot is offline."
+            )
+            embed.set_footer(text=f"Time: {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
+
+            await channel.send(embed=embed)
             await self.bot.close()
 
         except Exception as e:

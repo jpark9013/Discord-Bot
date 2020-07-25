@@ -108,7 +108,7 @@ class Reminders(commands.Cog, name="Reminders"):
         await send_embed(ctx, "Cleared all reminders.")
 
     @tasks.loop(seconds=30)
-    async def check_reminders(self, ctx):
+    async def check_reminders(self):
         cursor = await db.execute("Select MemberID, Reminder from Reminders where Time <= ?", (time.time(),))
         result = await cursor.fetchall()
 

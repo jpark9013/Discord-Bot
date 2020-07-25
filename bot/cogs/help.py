@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -23,13 +24,22 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
 
         cogs = self.bot.cogs
 
-        OWNER_COG_NAMES = ["Jishaku", "Owner", "SpreadSheets"]
+        OWNER_COG_NAMES = []
+
+        if ctx.guild.id != 732980515807952897:
+            OWNER_COG_NAMES.append("SpreadSheets")
+
+        if ctx.author != self.bot.owner:
+            OWNER_COG_NAMES.append("Jishaku")
+            OWNER_COG_NAMES.append("Owner")
+
         OWNER_COMMAND_NAMES = [i.qualified_name for i in self.bot.walk_commands() if i.cog and i.cog.qualified_name
                                in OWNER_COG_NAMES]
 
         cog_names_with_commands = [i for i in cogs.keys() if cogs[i].get_commands() and i not in OWNER_COG_NAMES]
         command_names = [i.qualified_name for i in self.bot.walk_commands() if
                          i.qualified_name not in OWNER_COMMAND_NAMES]
+
 
         if not name:
             value = [f"-{i}\n" for i in cog_names_with_commands]
@@ -131,3 +141,12 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
 
         self.content = content
         await send_embed(ctx, "Changelog edited.")
+
+        embed = discord.Embed(
+            colour=discord.Colour.blue(),
+            title="Changelog Edited",
+            description=content
+        )
+        embed.set_footer(text=datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+
+        await self.bot.get_guild(732980515807952897).get_channel(736352506669694976).send(embed=embed)
