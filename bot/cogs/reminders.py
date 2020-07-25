@@ -1,3 +1,4 @@
+import sqlite3
 import time
 import random
 
@@ -120,5 +121,9 @@ class Reminders(commands.Cog, name="Reminders"):
             except:  # Member deleted account, member doesn't share server with bot etc.
                 pass
 
-        await db.execute("Delete from Reminders where Time <= ?", (time.time(),))
-        await db.commit()
+        try:
+            await db.execute("Delete from Reminders where Time <= ?", (time.time(),))
+            await db.commit()
+
+        except sqlite3.OperationalError:
+            pass

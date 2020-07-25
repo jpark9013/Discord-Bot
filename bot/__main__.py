@@ -38,7 +38,7 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.x = 0
 
         self.loop.run_until_complete(self.con())
-        self.session = aiohttp.ClientSession()
+        self.loop.run_until_complete(self.session())
 
         self.load_extension("bot.cogs")
         self.load_extension("jishaku")
@@ -47,6 +47,9 @@ class HumphreyGaming(commands.AutoShardedBot):
 
     async def con(self):
         self.db = await aiosqlite3.connect("DiscordServers.db")
+
+    async def session(self):
+        self.session = aiohttp.ClientSession()
 
     async def paginate(self, ctx, entries: list, embed=True):
         p = Paginator(ctx, entries=entries, embed=embed)

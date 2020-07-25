@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import time
 from datetime import datetime
 
@@ -133,6 +134,43 @@ class Info(commands.Cog, name="Info"):
 
         await ctx.send(embed=embed)
 
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    @commands.guild_only()
+    @commands.check(check)
+    @commands.has_permissions(administrator=True)
+    async def kevinstimeplayingleague(self, ctx):
+        """Get Kevin's time playing league"""
+
+        cursor = await db.execute("Select Activities from Activity where MemberID = ?", (547796508221767692,))
+        result = await cursor.fetchone()
+
+        if not result or not result[0]:
+            return await send_embed(ctx, "Kevin probably hid his League activity so the bot can't see it.",
+                                    negative=True)
+
+        dict = json.loads(result[0])
+
+        hasleague = False
+
+        for i, v in dict.items():
+            if i == "League of Legends":
+                hasleague = True
+                d, remainder = divmod(v, 86400)
+                h, remainder = divmod(remainder, 3600)
+                m, s = divmod(remainder, 60)
+
+                description = f"League time played: {d}d {h}h {m}m {s}s\n" \
+                              f"Since 07/25/2020/ 18:00:00"
+                break
+
+        if not hasleague:
+            return await send_embed(ctx, "Kevin probably hid his League activity so the bot can't see it.",
+                                    negative=True)
+
+        await send_embed(ctx, description, info=True)
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command()
     @commands.guild_only()
     async def timeplaying(self, ctx, member: discord.Member):
@@ -150,8 +188,8 @@ class Info(commands.Cog, name="Info"):
 
         for i, v in dict.items():
             d, remainder = divmod(v, 86400)
-            h, remainder = divmod(v, 3600)
-            m, s = divmod(v, 60)
+            h, remainder = divmod(remainder, 3600)
+            m, s = divmod(remainder, 60)
 
             descriptions.append(f"Activity: {i}\n"
                                 f"Time played: {d}d {h}h {m}m {s}s\n"
@@ -159,8 +197,8 @@ class Info(commands.Cog, name="Info"):
 
         total = sum(dict.values())
         d, remainder = divmod(total, 86400)
-        h, remainder = divmod(total, 3600)
-        m, s = divmod(total, 60)
+        h, remainder = divmod(remainder, 3600)
+        m, s = divmod(remainder, 60)
 
         descs = []
         embeds = []
@@ -184,8 +222,6 @@ class Info(commands.Cog, name="Info"):
 
     @tasks.loop(seconds=30)
     async def time_playing(self):
-        if len(list(self.bot.get_all_members)) > 500:
-            return
 
         for member in self.bot.get_all_members():
             cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
@@ -199,20 +235,24 @@ class Info(commands.Cog, name="Info"):
             for activity in member.activities:
                 isactivity = True
                 if not result:
-                    dict[activity.name.lower()] = 30
+                    dict[activity.name] = 30
                 else:
                     indb = True
                     dict = json.loads(result[0])
                     try:
-                        dict[activity.name.lower()] += 30
+                        dict[activity.name] += 30
                     except KeyError:
-                        dict[activity.name.lower()] = 30
+                        dict[activity.name] = 30
 
             if isactivity:
-                if not indb:
-                    await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
-                    await db.commit()
+                try:
+                    if not indb:
+                        await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
+                        await db.commit()
 
-                else:
-                    await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict), member.id))
-                    await db.commit()
+                    else:
+                        await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict), member.id))
+                        await db.commit()
+
+                except sqlite3.OperationalError:
+                    pass

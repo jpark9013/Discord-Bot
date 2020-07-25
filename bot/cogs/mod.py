@@ -1,5 +1,6 @@
 import asyncio
 import json
+import sqlite3
 import time
 import typing
 from datetime import datetime
@@ -401,8 +402,11 @@ class Mod(commands.Cog, name="Moderator"):
             except:
                 pass
 
-        await db.execute("delete from Timestamps where Timeunmuted <= ?", (time.time(),))
-        await db.commit()
+        try:
+            await db.execute("delete from Timestamps where Timeunmuted <= ?", (time.time(),))
+            await db.commit()
+        except sqlite3.OperationalError:
+            pass
 
         cursor = await db.execute("select GuildID, MemberID from Timestamps where Timeunbanned <= ?",
                                   (time.time(),))
