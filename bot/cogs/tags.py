@@ -389,7 +389,6 @@ class Tags(commands.Cog, name="Tags"):
     @tag.command(aliases=["toptag"])
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    @commands.is_owner()
     async def toprotectedtag(self, ctx, *, tag: str):
         """Convert a tag to protected tag."""
 
@@ -430,7 +429,6 @@ class Tags(commands.Cog, name="Tags"):
     @tag.command(aliases=["moveptag"])
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    @commands.is_owner()
     async def moveprotectedtag(self, ctx, *, tag: str):
         """Convert a tag to protected tag without deleting the original tag."""
 

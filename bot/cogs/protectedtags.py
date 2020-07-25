@@ -465,11 +465,11 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
     @protectedtag.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    @commands.is_owner()
     async def totag(self, ctx, *, tag: str):
         """Convert a protected tag to a regular tag."""
 
-        cursor = await db.execute("Select TagContent from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
+        cursor = await db.execute("Select TagContent from ProtectedTags where GuildID = ? and Tag = ?",
+                                  (ctx.guild.id, tag))
         result = await cursor.fetchone()
 
         if not result:
@@ -493,7 +493,6 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
     @protectedtag.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    @commands.is_owner()
     async def movetag(self, ctx, *, tag: str):
         """Convert a protected tag to a regular tag without deleting the original tag."""
 
