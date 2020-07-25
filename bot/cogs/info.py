@@ -194,7 +194,10 @@ class Info(commands.Cog, name="Info"):
             dict = {}
             indb = False
 
+            isactivity = False
+
             for activity in member.activities:
+                isactivity = True
                 if not result:
                     dict[activity.name.lower()] = 30
                 else:
@@ -205,10 +208,11 @@ class Info(commands.Cog, name="Info"):
                     except KeyError:
                         dict[activity.name.lower()] = 30
 
-            if not indb:
-                await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
-                await db.commit()
+            if isactivity:
+                if not indb:
+                    await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
+                    await db.commit()
 
-            else:
-                await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict), member.id))
-                await db.commit()
+                else:
+                    await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict), member.id))
+                    await db.commit()
