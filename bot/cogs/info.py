@@ -134,7 +134,6 @@ class Info(commands.Cog, name="Info"):
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.check(check)
     @commands.guild_only()
     async def timeplaying(self, ctx, member: discord.Member):
         """Get time played on various activities on a member."""
@@ -142,7 +141,7 @@ class Info(commands.Cog, name="Info"):
         cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
         result = await cursor.fetchone()
 
-        if not result:
+        if not result or not result[0]:
             return await send_embed(ctx, "Could not find any activities for the member in the DB.", negative=True)
 
         descriptions = []
