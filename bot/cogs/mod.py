@@ -422,9 +422,13 @@ class Mod(commands.Cog, name="Moderator"):
             except:
                 pass
 
-        await db.execute("delete from Timestamps where (Timeunbanned <= ? and Timeunbanned != 0)",
-                         (time.time(),))
-        await db.commit()
+        try:
+            await db.execute("delete from Timestamps where (Timeunbanned <= ? and Timeunbanned != 0)",
+                             (time.time(),))
+            await db.commit()
+
+        except sqlite3.OperationalError:
+            pass
 
     @commands.cooldown(rate=1, per=60, type=commands.BucketType.user)
     @commands.has_permissions(manage_channels=True)

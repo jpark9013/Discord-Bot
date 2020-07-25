@@ -161,7 +161,7 @@ class Info(commands.Cog, name="Info"):
                 m, s = divmod(remainder, 60)
 
                 description = f"League time played: {d}d {h}h {m}m {s}s\n" \
-                              f"Since 07/25/2020/ 18:00:00"
+                              f"Since 07/25/2020 18:00:00"
                 break
 
         if not hasleague:

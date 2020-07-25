@@ -387,6 +387,11 @@ class Owner(commands.Cog, name="Owner"):
                            f"```")
 
     @commands.is_owner()
+    @commands.command(aliases=["sql"])
+    async def evalsql(self, ctx, *, statement: str):
+        """Tries to evaluate and print the sql statement."""
+
+    @commands.is_owner()
     @commands.command()
     async def nickbot(self, ctx, *, nick: str):
         """Nick the bot."""
