@@ -579,6 +579,9 @@ class Events(commands.Cog):
 
         member = guild.get_member(payload.user_id)
 
+        if member.bot:
+            return
+
         try:
             roles = member.roles
             roles.append(guild.get_role(result[1]))
@@ -609,6 +612,9 @@ class Events(commands.Cog):
             await db.commit()
 
         member = guild.get_member(payload.user_id)
+
+        if member.bot:
+            return
 
         try:
             roles = member.roles
