@@ -15,11 +15,6 @@ from bot.utils.paginator import Paginator
 with open("token.txt", "r") as file:
     TOKEN = file.readline()
 
-with open("createtables.json", "r") as file:
-    """List of Database tables to create"""
-
-    create_tables = json.load(file)
-
 
 def get_prefix(bot, message):
     with open("prefixes.json", "r") as file3:
@@ -61,11 +56,6 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.loop.run_until_complete(self.bot_start())
 
     async def bot_start(self):
-        # Comment this out until I delete a table in the db file
-        # for i in create_tables:
-            # await self.db.execute(i)
-            # await self.db.commit()
-
         await self.login(TOKEN)
         await self.connect(reconnect=True)
 

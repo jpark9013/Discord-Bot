@@ -17,6 +17,22 @@ class Owner(commands.Cog, name="Owner"):
 
     @commands.is_owner()
     @commands.command()
+    async def createtables(self, ctx):
+        """Create SQL tables if needed."""
+
+        with open("createtables.json", "r") as file:
+            """List of Database tables to create"""
+
+            create_tables = json.load(file)
+
+        for i in create_tables:
+            await db.execute(i)
+            await db.commit()
+
+        await send_embed(ctx, "Created tables.")
+
+    @commands.is_owner()
+    @commands.command()
     async def shutdown(self, ctx):
         """Shut down the bot"""
 
