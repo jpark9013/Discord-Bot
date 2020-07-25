@@ -1,8 +1,15 @@
+import json
 import time
 from datetime import datetime
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
+
+from bot.utils.message import send_embed
+
+
+def check(ctx):
+    return ctx.guild.id == 732980515807952897
 
 
 class Info(commands.Cog, name="Info"):
@@ -10,6 +17,7 @@ class Info(commands.Cog, name="Info"):
         self.bot = bot
         global db
         db = self.bot.db
+        self.time_playing.start()
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command(aliases=["memberinfo"])
@@ -93,7 +101,7 @@ class Info(commands.Cog, name="Info"):
 
         embed.add_field(name="Info", value=f"{uptime}\n"
                                            f"Currently in **{len(self.bot.guilds)}** servers\n"
-                                           f"Watching **{len(self.bot.users)-1}** users\n", inline=False)
+                                           f"Watching **{len(self.bot.users) - 1}** users\n", inline=False)
 
         embed.add_field(
             name="Invite",
@@ -124,3 +132,82 @@ class Info(commands.Cog, name="Info"):
         embed.set_footer(text=datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
 
         await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.check(check)
+    @commands.guild_only()
+    async def timeplaying(self, ctx, member: discord.Member):
+        """Get time played on various activities on a member."""
+
+        cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
+        result = await cursor.fetchone()
+
+        if not result:
+            return await send_embed(ctx, "Could not find any activities for the member in the DB.", negative=True)
+
+        descriptions = []
+
+        for i, v in json.loads(result[0]):
+            d, remainder = divmod(v, 86400)
+            h, remainder = divmod(v, 3600)
+            m, s = divmod(v, 60)
+
+            descriptions.append(f"Activity: {i}\n"
+                                f"Time played: {d}d {h}h {m}m {s}s\n"
+                                f"")
+
+        total = sum(json.loads(result[0]).values())
+        d, remainder = divmod(total, 86400)
+        h, remainder = divmod(total, 3600)
+        m, s = divmod(total, 60)
+
+        descs = []
+        embeds = []
+
+        for i, v in enumerate(descriptions, start=1):
+            descs.append(v)
+            if i == len(descriptions) or i % 5 == 0:
+                embed = discord.Embed(
+                    colour=discord.Colour.blue(),
+                    title=f"{str(member)}'s time playing various activities",
+                    description="\n".join(descs)
+                )
+                embed.set_author(name=str(member), icon_url=str(member.avatar_url))
+                embed.set_footer(text=f"Total time played on all activities: {d}d {h}h {m}m {s}s\n"
+                                      f"Since 07/25/2020/ 17:21:14")
+
+                embeds.append(embed)
+                descs = []
+
+        await self.bot.paginate(ctx, embeds)
+
+    @tasks.loop(seconds=30)
+    async def time_playing(self):
+        if len(list(self.bot.get_all_members)) > 500:
+            return
+
+        for member in self.bot.get_all_members():
+            cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
+            result = await cursor.fetchone()
+
+            dict = {}
+            indb = False
+
+            for activity in member.activities:
+                if not result:
+                    dict[activity.name.lower()] = 30
+                else:
+                    indb = True
+                    dict = json.loads(result[0])
+                    try:
+                        dict[activity.name.lower()] += 30
+                    except KeyError:
+                        dict[activity.name.lower()] = 30
+
+            if not indb:
+                await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
+                await db.commit()
+
+            else:
+                await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict), member.id))
+                await db.commit()
