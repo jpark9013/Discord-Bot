@@ -251,7 +251,8 @@ class Info(commands.Cog, name="Info"):
                         await db.commit()
 
                     else:
-                        await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict), member.id))
+                        await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict),
+                                                                                                   member.id))
                         await db.commit()
 
                 except sqlite3.OperationalError:
