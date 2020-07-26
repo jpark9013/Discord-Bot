@@ -224,38 +224,40 @@ class Info(commands.Cog, name="Info"):
     async def time_playing(self):
 
         for member in self.bot.get_all_members():
-            cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
-            result = await cursor.fetchone()
 
-            dict = {}
-            indb = False
+            if not member.bot:
+                cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
+                result = await cursor.fetchone()
 
-            isactivity = False
+                dict = {}
+                indb = False
 
-            for activity in member.activities:
-                isactivity = True
-                if not result:
-                    dict[activity.name] = 30
-                else:
-                    indb = True
-                    dict = json.loads(result[0])
-                    try:
-                        dict[activity.name] += 30
-                    except KeyError:
+                isactivity = False
+
+                for activity in member.activities:
+                    isactivity = True
+                    if not result:
                         dict[activity.name] = 30
-
-            if isactivity:
-                try:
-                    if not indb:
-                        await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
-                        await db.commit()
-
                     else:
-                        await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict),
-                                                                                                   member.id))
-                        await db.commit()
+                        indb = True
+                        dict = json.loads(result[0])
+                        try:
+                            dict[activity.name] += 30
+                        except KeyError:
+                            dict[activity.name] = 30
 
-                except sqlite3.OperationalError:
-                    pass
-                except sqlite3.DatabaseError:
-                    pass
+                if isactivity:
+                    try:
+                        if not indb:
+                            await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
+                            await db.commit()
+
+                        else:
+                            await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict),
+                                                                                                       member.id))
+                            await db.commit()
+
+                    except sqlite3.OperationalError:
+                        pass
+                    except sqlite3.DatabaseError:
+                        pass
