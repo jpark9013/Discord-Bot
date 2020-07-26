@@ -429,6 +429,8 @@ class Mod(commands.Cog, name="Moderator"):
 
         except sqlite3.OperationalError:
             pass
+        except sqlite3.DatabaseError:
+            pass
 
     @commands.cooldown(rate=1, per=60, type=commands.BucketType.user)
     @commands.has_permissions(manage_channels=True)

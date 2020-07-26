@@ -5,6 +5,7 @@ from datetime import datetime
 
 import discord
 from discord.ext import commands, tasks
+from prettytable import PrettyTable
 
 from bot.utils.message import send_embed
 
@@ -385,11 +386,6 @@ class Owner(commands.Cog, name="Owner"):
             await ctx.send(f"```py\n"
                            f"{str(e)}\n"
                            f"```")
-
-    @commands.is_owner()
-    @commands.command(aliases=["sql"])
-    async def evalsql(self, ctx, *, statement: str):
-        """Tries to evaluate and print the sql statement."""
 
     @commands.is_owner()
     @commands.command()

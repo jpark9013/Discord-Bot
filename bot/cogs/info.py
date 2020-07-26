@@ -257,3 +257,5 @@ class Info(commands.Cog, name="Info"):
 
                 except sqlite3.OperationalError:
                     pass
+                except sqlite3.DatabaseError:
+                    pass

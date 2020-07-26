@@ -127,3 +127,5 @@ class Reminders(commands.Cog, name="Reminders"):
 
         except sqlite3.OperationalError:
             pass
+        except sqlite3.DatabaseError:
+            pass
