@@ -120,6 +120,11 @@ class Info(commands.Cog, name="Info"):
             value="[Vote for me here](https://top.gg/bot/718287109030543370)"
         )
 
+        embed.add_field(
+            name="Check out my other projects!",
+            value="[Asyncio wrapper for CodeForces](https://github.com/jpark9013/aiocodeforces)"
+        )
+
         try:
             mention = (self.bot.get_user(439228325722849290) or await self.bot.fetch_user(439228325722849290)).mention
         except:
@@ -154,13 +159,14 @@ class Info(commands.Cog, name="Info"):
         hasleague = False
 
         for i, v in dict.items():
+            v /= 2
             if i == "League of Legends":
                 hasleague = True
                 d, remainder = divmod(v, 86400)
                 h, remainder = divmod(remainder, 3600)
                 m, s = divmod(remainder, 60)
 
-                description = f"League time played: {d}d {h}h {m}m {s}s\n" \
+                description = f"League time played: {int(d)}d {int(h)}h {int(m)}m {int(s)}s\n" \
                               f"Since 07/25/2020 18:00:00"
                 break
 
@@ -187,18 +193,24 @@ class Info(commands.Cog, name="Info"):
         dict = json.loads(result[0])
 
         for i, v in dict.items():
+            v /= 2
             d, remainder = divmod(v, 86400)
             h, remainder = divmod(remainder, 3600)
             m, s = divmod(remainder, 60)
 
             descriptions.append(f"Activity: {i}\n"
-                                f"Time played: {d}d {h}h {m}m {s}s\n"
+                                f"Time played: {int(d)}d {int(h)}h {int(m)}m {int(s)}s\n"
                                 f"")
 
-        total = sum(dict.values())
+        total = sum(dict.values())/2
         d, remainder = divmod(total, 86400)
         h, remainder = divmod(remainder, 3600)
         m, s = divmod(remainder, 60)
+
+        d = int(d)
+        h = int(h)
+        m = int(m)
+        s = int(s)
 
         descs = []
         embeds = []
