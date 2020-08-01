@@ -52,7 +52,7 @@ class Tags(commands.Cog, name="Tags"):
         await db.execute("Update Tags set Uses = Uses + 1 where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         await db.commit()
 
-        await ctx.send(result[0])
+        await ctx.send(discord.utils.escape_mentions(result[0]))
 
         cursor = await db.execute("Select count(*) from TagUsage where GuildID = ? and MemberID = ?",
                                   (ctx.guild.id, ctx.author.id))

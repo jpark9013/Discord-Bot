@@ -239,7 +239,7 @@ class Mod(commands.Cog, name="Moderator"):
     @commands.bot_has_permissions(ban_members=True)
     async def ban(self, ctx, member: typing.Union[discord.Member, int], minutes: float = -1, *,
                   reason: str = None):
-        """Ban a member"""
+        """Ban a member. -1 for permanent."""
 
         if isinstance(member, int):
             try:
@@ -455,13 +455,13 @@ class Mod(commands.Cog, name="Moderator"):
         """Prune some number of messages."""
 
         if limit == 0 or limit > 99:
-            return await ctx.send(to_embed("Invalid number of messages to prune.", negative=True))
+            return await send_embed(ctx, "Invalid number of messages to prune.", negative=True)
 
-        await ctx.channel.purge(limit=limit + 1)
+        await ctx.channel.purge(limit=limit+1)
 
         embed = discord.Embed(
             colour=discord.Colour.green(),
-            description=f"✅ {limit} messages deleted."
+            description=f"✅ ***{limit} messages deleted.***"
         )
 
         msg = await ctx.send(embed=embed)

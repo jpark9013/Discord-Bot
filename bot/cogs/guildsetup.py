@@ -8,7 +8,7 @@ from discord.ext import commands
 from bot.utils.message import send_embed, to_embed
 
 
-class Guild_Setup(commands.Cog, name="GuildSetup"):
+class Guild_Setup(commands.Cog, name="Guild Setup"):
     def __init__(self, bot):
         self.bot = bot
         global db
@@ -167,6 +167,7 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
     @blacklist.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(manage_messages=True)
     async def word(self, ctx, word: str):
         """Blacklist a word. Summon this command again with the same argument to unblacklist a word. You can also put
         spoilers around the word, and the bot will try to remove them when adding them to the blacklist."""
@@ -343,34 +344,72 @@ class Guild_Setup(commands.Cog, name="GuildSetup"):
             "Green": (discord.Colour.green(), "🟢"),
             "Blue": (discord.Colour.blue(), "🔵"),
             "Purple": (discord.Colour.purple(), "🟣"),
-            "White": (discord.Colour.from_rgb(255, 255, 255), "⚪"),
+            "White": (discord.Colour.from_rgb(254, 254, 254), "⚪"),
             "Grey": (discord.Colour.from_rgb(128, 128, 128), "🔘"),
-            "Black": (discord.Colour.darker_grey(), "⚫")
+            "Black": (discord.Colour.from_rgb(1, 1, 1), "⚫")
         }
 
         ids = {}
 
         for i, tup in rainbow.items():
             role = await ctx.guild.create_role(name=i, colour=tup[0])
-            ids[i] = (role.id, tup[1])
+            ids[i] = (role.id, tup[0], tup[1])
             try:
-                await role.edit(position=ctx.guild.me.top_role.position-2)
+                await role.edit(position=ctx.guild.me.top_role.position - 2)
             except:
                 pass
 
-        for color, tup in ids.items():
-
+        for colorname, tup in ids.items():
             embed = discord.Embed(
-                colour=color,
+                colour=tup[1],
                 title="React for Role",
-                description=f"React to this message for the role color **{color}**!"
+                description=f"React to this message for the role color **{colorname}**!"
             )
 
             msg = await channel.send(embed=embed)
 
-            await msg.add_reaction(tup[1])
-
-            await db.execute("Insert into RoleReact values (?, ?, ?, ?)", (msg.id, tup[0], tup[1], True))
-            await db.commit()
+            await msg.add_reaction(tup[2])
 
         await send_embed(ctx, "Sent role react messages for all colors.")
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.group()
+    @commands.guild_only()
+    @commands.has_permissions(manage_emojis=True)
+    @commands.bot_has_permissions(manage_emojis=True)
+    async def emoji(self, ctx):
+        """The base emoji command."""
+
+        pass
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @emoji.command(aliases=["add"])
+    @commands.guild_only()
+    @commands.has_permissions(manage_emojis=True)
+    @commands.bot_has_permissions(manage_emojis=True)
+    async def create(self, ctx, name, emoji: typing.Union[discord.Attachment, str], *, reason=None):
+        """Create an emoji given an attachment."""
+
+        if isinstance(emoji, discord.Attachment):
+            byteobj = await emoji.read(use_cached=True)
+
+            if not byteobj:
+                byteobj = await emoji.read()
+
+        else:
+            async with self.bot.session.get(emoji) as resp:
+                byteobj = await resp.content.read()
+
+        await ctx.guild.create_custom_emoji(name=name, image=byteobj, reason=reason)
+        await send_embed(ctx, "Created emoji.")
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @emoji.command(aliases=["delete"])
+    @commands.guild_only()
+    @commands.has_permissions(manage_emojis=True)
+    @commands.bot_has_permissions(manage_emojis=True)
+    async def remove(self, ctx, emoji: discord.Emoji, *, reason=None):
+        """Remove an emoji."""
+
+        await emoji.delete(reason=reason)
+        await send_embed(ctx, "Deleted emoji.")

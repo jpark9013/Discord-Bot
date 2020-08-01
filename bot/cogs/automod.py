@@ -1,3 +1,4 @@
+import json
 import time
 
 import discord
@@ -10,15 +11,21 @@ async def sql_write(ctx, column, string):
     cursor = await db.execute(f"Select {column} from AutoMod where GuildID = ?", (ctx.guild.id,))
     result = await cursor.fetchone()
 
+    if result == ():
+        await db.execute("Insert into AutoMod values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                         (ctx.guild.id, False, False, False, False, False, False, False, False, json.dumps([])))
+        await db.commit()
+        return await db.execute(f"Set {column} = ? where GuildID = ?", (True, ctx.guild.id))
+
     if result[0]:
         await db.execute(f"Update AutoMod set {column} = ? where GuildID = ?", (False, ctx.guild.id))
         await db.commit()
-        await send_embed(ctx, f"Turned off detection for {string}.")
+        return await send_embed(ctx, f"Turned off detection for {string}.")
 
     else:
         await db.execute(f"Update AutoMod set {column} = ? where GuildID = ?", (True, ctx.guild.id))
         await db.commit()
-        await send_embed(ctx, f"Turned on detection for {string}.")
+        return await send_embed(ctx, f"Turned on detection for {string}.")
 
 
 class AutoMod(commands.Cog, name="AutoMod"):
@@ -29,7 +36,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
 
     # Banned words command is in guildsetup, because I'm too lazy to move it here along with the rest of the DB
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def automod(self, ctx):
@@ -40,18 +47,18 @@ class AutoMod(commands.Cog, name="AutoMod"):
         result = await cursor.fetchone()
 
         if not result:
-            await db.execute("Insert into AutoMod values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                             (ctx.guild.id, False, False, False, False, False, False, False, False))
+            await db.execute("Insert into AutoMod values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                             (ctx.guild.id, False, False, False, False, False, False, False, False, json.dumps([])))
             await db.commit()
             result = (False, False, False, False, False, False, False, False)
 
         result = list(result)
 
-        for i in result:
-            if i:
-                i = "On"
+        for i, v in enumerate(result):
+            if v:
+                result[i] = "On"
             else:
-                i = "Off"
+                result[i] = "Off"
 
         description = f"**All Caps Detection:** {result[0]}\n" \
                       f"**Fast Message Spam Detection:** {result[1]}\n" \
@@ -126,3 +133,20 @@ class AutoMod(commands.Cog, name="AutoMod"):
 
         await sql_write(ctx, "EmojiSpam", "emoji spam")
 
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @automod.command()
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def spoilers(self, ctx):
+        """Toggle spoiler detection on or off. Removes message if detected."""
+
+        await sql_write(ctx, "Spoilers", "spoilers")
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @automod.command()
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def selfbot(self, ctx):
+        """Toggle selfbot detection on or off. Bans member if detected."""
+
+        await sql_write(ctx, "Selfbot", "selfbots")

@@ -1,5 +1,6 @@
 # import asyncio
 import json
+import re
 import time
 from datetime import datetime
 
@@ -16,18 +17,18 @@ with open("token.txt", "r") as file:
     TOKEN = file.readline()
 
 
-def get_prefix(bot, message):
-    with open("prefixes.json", "r") as file3:
-        prefixes = json.load(file3)
-
-    try:
-        return prefixes[str(message.guild.id)]
-    except KeyError:
-        return ";"
-
-
 class HumphreyGaming(commands.AutoShardedBot):
     def __init__(self):
+
+        def get_prefix(self, message):
+            with open("prefixes.json", "r") as f:
+                prefixes = json.load(f)
+
+            try:
+                return prefixes[str(message.guild.id)]
+            except KeyError:
+                return ";"
+
         super().__init__(command_prefix=get_prefix, case_insensitive=True, help_command=None)
 
         # Status changing stuff
@@ -44,6 +45,10 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.load_extension("jishaku")
 
         self.startTime = time.time()
+
+        self.invite_regex = re.compile("(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/?[a-zA-Z0-9]+/?")
+        self.link_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+        self.emoji_regex = re.compile("<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>")
 
     async def con(self):
         self.db = await aiosqlite3.connect("DiscordServers.db")
@@ -87,26 +92,94 @@ class HumphreyGaming(commands.AutoShardedBot):
                message.channel.permissions_for(message.guild.me).send_messages
 
     async def on_message(self, message):
+
+        ctx = await self.get_context(message)
+
         with open("blacklist.json") as f:
             blacklist = json.load(f)
-        if message.author.bot or not self.is_ready() or not self.can_send(message) or message.author.id in \
-                blacklist["members"] or (message.guild and message.guild.id in blacklist["guilds"]):
+        if ctx.author.bot or not self.is_ready() or not self.can_send(message) or \
+                (ctx.guild and ctx.guild.id in blacklist["guilds"]):
             return
 
-        cursor = await self.db.execute("Select Channels, Words from Blacklist where GuildID = ?", (message.guild.id,))
+        cursor = await self.db.execute("Select * from AutoMod where GuildID = ?", (ctx.guild.id,))
+        result = await cursor.fetchone()
+
+        if result and ctx.guild and ctx.channel.id not in json.loads(result[9]):
+
+            if result[1]:
+                if message.content.isupper() and len(message.content) > 7:
+                    return await message.delete()
+
+            if result[2]:
+                cursor = await self.db.execute("""Select firstTime, Times from FastMessageSpam
+                where GuildID = ? and MemberID = ?""", (ctx.guild.id, ctx.author.id))
+                result = await cursor.fetchone()
+
+                if not result:
+                    await self.db.execute("Insert into FastMessageSpam values (?, ?, ?, ?)",
+                                          (ctx.guild.id, ctx.author.id, time.time(), 1))
+                    await self.db.commit()
+
+                else:
+                    if time.time() <= result[0] + 5:
+
+                        if result[1] == 5:
+                            cmd = self.get_command("mute")
+                            return await cmd(ctx, member=ctx.author, reason="Automuted due to spam.")
+
+                        else:
+                            await self.db.execute("""Update FastMessageSpam set Times = Times + 1
+                            where GuildID = ? and MemberID = ?""", (ctx.guild.id, ctx.author.id))
+                            await self.db.commit()
+
+                    else:
+                        await self.db.execute("Delete from FastMessageSpam where GuildID = ? and MemberID = ?",
+                                              (ctx.guild.id, ctx.author.id))
+                        await self.db.commit()
+
+            if result[3]:
+                if self.invite_regex.search(message.content):
+                    return await message.delete()
+
+            if result[4]:
+                if self.link_regex.search(message.content):
+                    return await message.delete()
+
+            if result[5]:
+                if message.mentions > 5:
+                    return await message.delete()
+
+            if result[6]:
+                if len(self.emoji_regex.findall(message.content)) >= 10:
+                    return await message.delete()
+
+            if result[7]:
+                for i in message.content.split():
+                    if len(i) >= 5 and i[0] == "|" and i[1] == "|" and i[-1] == "|" and i[-2] == "|":
+                        return await message.delete(reason="Spoiler detected.")
+
+            if result[8]:
+                if message.embeds:
+                    cmd = self.get_command("ban")
+                    return await cmd(ctx, member=ctx.author, reason="Selfbot detected")
+
+        cursor = await self.db.execute("Select Channels, Words from Blacklist where GuildID = ?", (ctx.guild.id,))
         result = await cursor.fetchone()
 
         if result:
-            if message.channel.id in json.loads(result[0]):
-                return
-
-            if not message.author.guild_permissions.administrator:
+            if not ctx.author.guild_permissions.administrator:
                 for i in json.loads(result[1]):
                     if i in message.content.split():
                         try:
                             return await message.delete()
-                        except:
+                        except discord.Forbidden:
                             return
+
+            if ctx.channel.id in json.loads(result[0]):
+                return
+
+        if ctx.author.id in blacklist["members"]:
+            return
 
         await self.process_commands(message)
 

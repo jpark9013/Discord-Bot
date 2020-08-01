@@ -6,7 +6,7 @@ from discord.ext import commands
 from bot.utils.message import send_embed
 
 
-class Todo(commands.Cog, name="To do"):
+class Todo(commands.Cog, name="To Do"):
     def __init__(self, bot):
         self.bot = bot
         global db

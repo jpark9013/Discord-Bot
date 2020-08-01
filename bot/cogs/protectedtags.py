@@ -51,7 +51,7 @@ def can_view(ctx, roleID):
     return ctx.author == ctx.guild.owner
 
 
-class ProtectedTags(commands.Cog, name="ProtectedTags"):
+class ProtectedTags(commands.Cog, name="Protected Tags"):
     def __init__(self, bot):
         self.bot = bot
         global db
@@ -78,7 +78,7 @@ class ProtectedTags(commands.Cog, name="ProtectedTags"):
         await db.execute("Update ProtectedTags set Uses = Uses + 1 where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         await db.commit()
 
-        await ctx.send(result[0])
+        await ctx.send(discord.utils.escape_markdown(result[0]))
 
         cursor = await db.execute("Select count(*) from TagUsage where GuildID = ? and MemberID = ?",
                                   (ctx.guild.id, ctx.author.id))

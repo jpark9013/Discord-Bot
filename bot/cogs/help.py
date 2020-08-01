@@ -7,7 +7,7 @@ from discord.ext import commands
 from bot.utils.message import send_embed, to_embed
 
 
-class HelpCommand(commands.Cog, name="HelpCommand"):
+class HelpCommand(commands.Cog, name="Help"):
     def __init__(self, bot):
         self.bot = bot
         db = self.bot.db
@@ -26,7 +26,7 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
 
         OWNER_COG_NAMES = []
 
-        if ctx.guild.id != 732980515807952897:
+        if ctx.guild.id != 732980515807952897 and ctx.author.id != 648741756384575509:
             OWNER_COG_NAMES.append("SpreadSheets")
 
         if ctx.author.id != 648741756384575509:
@@ -39,7 +39,6 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
         cog_names_with_commands = [i for i in cogs.keys() if cogs[i].get_commands() and i not in OWNER_COG_NAMES]
         command_names = [i.qualified_name for i in self.bot.walk_commands() if
                          i.qualified_name not in OWNER_COMMAND_NAMES]
-
 
         if not name:
             value = [f"-{i}\n" for i in cog_names_with_commands]
@@ -79,7 +78,6 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
 
                     if index % 10 == 0 or index == len(cog.get_commands()):
                         embed = discord.Embed(
-                            colour=discord.Colour.blue(),
                             description="\n".join(value),
                             title=command.cog.qualified_name
                         )
@@ -112,7 +110,6 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
                               f"{command.help}"
 
                 embed = discord.Embed(
-                    colour=discord.Colour.blue(),
                     title=f"{prefix}{command.qualified_name} {command.signature}",
                     description=description
                 )
@@ -121,8 +118,6 @@ class HelpCommand(commands.Cog, name="HelpCommand"):
                 embed.set_footer(text=f"Do {prefix}help [command name] [subcommand name] to get help on a subcommand!")
 
                 await ctx.send(embed=embed)
-
-
 
             else:
                 return await send_embed(ctx, "Invalid category/command name", negative=True)
