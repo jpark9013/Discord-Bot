@@ -407,6 +407,8 @@ class Mod(commands.Cog, name="Moderator"):
             await db.commit()
         except sqlite3.OperationalError:
             pass
+        except sqlite3.DatabaseError:
+            pass
 
         cursor = await db.execute("select GuildID, MemberID from Timestamps where Timeunbanned <= ?",
                                   (time.time(),))

@@ -146,7 +146,7 @@ class HumphreyGaming(commands.AutoShardedBot):
                     return await message.delete()
 
             if result[5]:
-                if message.mentions > 5:
+                if len(message.mentions) >= 5:
                     return await message.delete()
 
             if result[6]:
@@ -156,7 +156,7 @@ class HumphreyGaming(commands.AutoShardedBot):
             if result[7]:
                 for i in message.content.split():
                     if len(i) >= 5 and i[0] == "|" and i[1] == "|" and i[-1] == "|" and i[-2] == "|":
-                        return await message.delete(reason="Spoiler detected.")
+                        return await message.delete()
 
             if result[8]:
                 if message.embeds:
