@@ -14,7 +14,7 @@ class HelpCommand(commands.Cog, name="Help"):
         self.content = "Multiple changes made."
 
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     async def help(self, ctx, *, name: str = None):
         """Get help on categories."""
 
@@ -26,7 +26,7 @@ class HelpCommand(commands.Cog, name="Help"):
 
         OWNER_COG_NAMES = []
 
-        if ctx.guild.id != 732980515807952897 and ctx.author.id != 648741756384575509:
+        if ctx.author.id != 648741756384575509 or (not ctx.guild or ctx.guild.id != 732980515807952897):
             OWNER_COG_NAMES.append("SpreadSheets")
 
         if ctx.author.id != 648741756384575509:
@@ -121,6 +121,52 @@ class HelpCommand(commands.Cog, name="Help"):
 
             else:
                 return await send_embed(ctx, "Invalid category/command name", negative=True)
+
+    @help.command()
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    async def all(self, ctx):
+        """Get list of all commands and modules."""
+
+        no_show_cogs = []
+
+        if ctx.author.id != 648741756384575509:
+            no_show_cogs.append("Owner")
+            no_show_cogs.append("Jishaku")
+
+        if ctx.author.id != 648741756384575509 or (not ctx.guild or ctx.guild.id != 732980515807952897):
+            no_show_cogs.append("SpreadSheets")
+
+        cogs = [i for i in self.bot.cogs if i not in no_show_cogs]
+        commands = [i.qualified_name for i in self.bot.walk_commands() if i.cog and i.cog.qualified_name in cogs]
+
+        description = []
+        embeds = []
+
+        for i, v in enumerate(cogs, start=1):
+            description.append(f"{i}. {v}")
+            if i % 10 == 0 or i == len(cogs):
+                embed = discord.Embed(
+                    title="Modules",
+                    description="\n".join(description)
+                )
+                embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
+
+                embeds.append(embed)
+                description = []
+
+        for i, v in enumerate(commands, start=1):
+            description.append(f"{i}. {v}")
+            if i % 10 == 0 or i == len(commands):
+                embed = discord.Embed(
+                    title="Commands",
+                    description="\n".join(description)
+                )
+                embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
+
+                embeds.append(embed)
+                description = []
+
+        await self.bot.paginate(ctx, embeds)
 
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     @commands.group(invoke_without_command=True)
