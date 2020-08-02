@@ -102,17 +102,14 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
 
         can_create = False
 
-        if ctx.author != ctx.guild.owner:
-            for i in ctx.author.roles:
-                if i.permissions.administrator:
-                    can_create = True
-                    break
+        for i in ctx.author.roles:
+            if i.permissions.administrator:
+                can_create = True
+                break
 
         if not can_create:
-            return await send_embed(ctx, "You cannot create a protectedtag even though you are the owner because you "
-                                         "do not share any administrator roles. You may as well create notes for "
-                                         "yourself.",
-                                    negative=True)
+            return await send_embed(ctx, "You must have an administrative role to create a protected tag, even if you "
+                                         "are the owner.", negative=True)
 
         for i in reversed(ctx.author.roles):
             if i.permissions.administrator:
