@@ -340,7 +340,7 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
                                       "order by Uses desc limit 3", (ctx.guild.id,))
             result = await cursor.fetchall()
 
-            for i in range(0, 3):
+            for i in range(3):
                 try:
                     a = result[i]  # Basically checking if it exists
                 except:
@@ -360,7 +360,7 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
                 (ctx.guild.id,))
             result = await cursor.fetchall()
 
-            for i in range(0, 3):
+            for i in range(3):
                 try:
                     result[i] = list(result[i])
                     result[i][0] = ctx.guild.get_member(result[i][0]).mention
@@ -380,7 +380,7 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
                                       "order by count(*) desc limit 3")
             result = await cursor.fetchall()
 
-            for i in range(0, 3):
+            for i in range(3):
                 try:
                     result[i] = list(result[i])
                     result[i][0] = ctx.guild.get_member(result[i][0]).mention
@@ -411,7 +411,7 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
             result = await cursor.fetchone()
             result = list(result)
 
-            for i in range(0, 2):
+            for i in range(2):
                 try:
                     result[i] = str(result[i])
                 except:
@@ -437,7 +437,7 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
                                       "order by Uses desc limit 3", (ctx.guild.id, member.id))
             result = await cursor.fetchall()
 
-            for i in range(0, 3):
+            for i in range(3):
                 try:
                     a = result[i]
                 except:
