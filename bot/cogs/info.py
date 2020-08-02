@@ -202,7 +202,7 @@ class Info(commands.Cog, name="Info"):
                                 f"Time played: {int(d)}d {int(h)}h {int(m)}m {int(s)}s\n"
                                 f"")
 
-        total = sum(dict.values())/2
+        total = sum(dict.values()) / 2
         d, remainder = divmod(total, 86400)
         h, remainder = divmod(remainder, 3600)
         m, s = divmod(remainder, 60)
@@ -273,3 +273,12 @@ class Info(commands.Cog, name="Info"):
                         pass
                     except sqlite3.DatabaseError:
                         pass
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.command()
+    @commands.guild_only()
+    async def serverinfo(self, ctx):
+        """Get info of the current server."""
+
+        cmd = self.bot.get_command("server_info")
+        await cmd(ctx)

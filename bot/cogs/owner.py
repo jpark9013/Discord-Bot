@@ -397,3 +397,133 @@ class Owner(commands.Cog, name="Owner"):
 
         except Exception as e:
             await send_embed(ctx, str(e), negative=True)
+
+    @commands.command()
+    @commands.is_owner()
+    async def server_info(self, ctx, ID: int = None):
+        """Get info of the specified server."""
+
+        if not ID:
+            guild = ctx.guild
+        else:
+            guild = self.bot.get_guild(ID)
+            if not guild:
+                return await send_embed(ctx, "Guild with specified ID does not exist.", negative=True)
+
+        embed = discord.Embed(
+            colour=discord.Colour.blue(),
+            title=f"{guild.name} statistics",
+            description=guild.description
+        )
+
+        embed.set_thumbnail(url=str(guild.icon_url))
+        embed.set_footer(text=f"Created at {guild.created_at.strftime('%m/%d/%Y, %H:%M:%S')}")
+
+        value = guild.features
+        if not value:
+            value = ["None"]
+
+        embed.add_field(name="Features", value="\n".join(value))
+
+        lockedtextchannels = 0
+        lockedcategorychannels = 0
+
+        if not guild.default_role.permissions.view_channel:
+            lockedtextchannels = len(guild.text_channels)
+            lockedcategorychannels = len(guild.categories)
+
+        else:
+            for chan in guild.text_channels:
+                if chan.overwrites_for(guild.default_role).view_channel is False:
+                    lockedtextchannels += 1
+
+            for category in guild.categories:
+                if category.overwrites_for(guild.default_role).view_channel is False:
+                    lockedcategorychannels += 1
+
+        lockedvoicechannels = 0
+
+        if not guild.default_role.permissions.connect:
+            lockedvoicechannels = len(guild.voice_channels)
+
+        else:
+            for chan in guild.voice_channels:
+                if chan.overwrites_for(guild.default_role).connect is False:
+                    lockedvoicechannels += 1
+
+        value = f"<:textchannel:739339100058026055> {len(guild.text_channels)} " \
+                f"({lockedtextchannels} locked)\n" \
+                f"<:voicechannel:739339126750445579> {len(guild.voice_channels)} " \
+                f"({lockedvoicechannels} locked)\n" \
+                f"<:category:739339033578176522> {len(guild.categories)} " \
+                f"({lockedcategorychannels} locked)"
+
+        embed.add_field(name="Channels", value=value)
+
+        online = 0
+        idle = 0
+        dnd = 0
+        streaming = 0
+        offline = 0
+        bots = 0
+
+        for i in guild.members:
+            if i.status.value == "online":
+                online += 1
+            elif i.status.value == "idle":
+                idle += 1
+            elif i.status.value == "dnd":
+                dnd += 1
+            elif i.status.value == "offline":
+                offline += 1
+            if i.bot:
+                bots += 1
+            if isinstance(i.activity, discord.Streaming):
+                streaming += 1
+
+        value = f"<:online:739335368410660905> {online}" \
+                f"<:idle:739335424853672007> {idle}" \
+                f"<:dnd:739335328288211004> {dnd}" \
+                f"<:streaming:739335478376923217> {streaming}" \
+                f"<:offline:739335400593817602> {offline}\n" \
+                f"Total: {len(guild.members)} members ({bots} bots)"
+
+        embed.add_field(name="Members", value=value, inline=False)
+
+        value = f"Nitro Tier: {guild.premium_tier}\n" \
+                f"Boosters: {guild.premium_subscription_count}\n" \
+                f"Maximum bitrate: {int(guild.bitrate_limit)} bits\n" \
+                f"File size limit: {int(guild.filesize_limit / 1000000)}MB\n" \
+                f"Maximum number of emojis: {guild.emoji_limit}"
+
+        embed.add_field(name="Nitro", value=value, inline=False)
+
+        value = f"{len(guild.roles)} roles, of which " \
+                f"{len([i for i in guild.roles if i.permissions.administrator])} have administrator permissions."
+
+        embed.add_field(name="Roles", value=value, inline=False)
+
+        animated = len([i for i in guild.emojis if i.animated])
+
+        value = f"Regular: {len(guild.emojis) - animated}/{guild.emoji_limit}\n" \
+                f"Animated: {animated}/{guild.emoji_limit}\n" \
+                f"{len(guild.emojis)}/{guild.emoji_limit} total"
+
+        embed.add_field(name="Emojis", value=value, inline=False)
+
+        if not guild.afk_channel:
+            afkchannel = "None"
+        else:
+            afkchannel = f"<#{guild.afk_channel.id}>"
+
+        value = f"ID: {guild.id}\n" \
+                f"Owner: {guild.owner.mention}\n" \
+                f"AFK Timeout: {int(guild.afk_timeout/60)} minutes\n" \
+                f"AFK Channel: {afkchannel}\n" \
+                f"Voice Region: {guild.region if isinstance(guild.region, str) else guild.region.value}\n" \
+                f"Icon URL: {str(guild.icon_url) if str(guild.icon_url) else 'None'}\n" \
+                f"Banner URL: {str(guild.banner_url) if str(guild.banner_url) else 'None'}\n"
+
+        embed.add_field(name="Miscallenous", value=value, inline=False)
+
+        await ctx.send(embed=embed)
