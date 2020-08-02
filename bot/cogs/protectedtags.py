@@ -102,19 +102,15 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
 
         can_create = False
 
-        for i in ctx.author.roles:
+        for i in reversed(ctx.author.roles):
             if i.permissions.administrator:
                 can_create = True
+                role = i
                 break
 
         if not can_create:
             return await send_embed(ctx, "You must have an administrative role to create a protected tag, even if you "
                                          "are the owner.", negative=True)
-
-        for i in reversed(ctx.author.roles):
-            if i.permissions.administrator:
-                role = i
-                break
 
         cursor = await db.execute("Select count(*) from ProtectedTags where GuildID = ? and Tag = ?",
                                   (ctx.guild.id, tag))
