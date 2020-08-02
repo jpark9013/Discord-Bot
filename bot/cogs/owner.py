@@ -492,7 +492,7 @@ class Owner(commands.Cog, name="Owner"):
 
         value = f"Nitro Tier: {guild.premium_tier}\n" \
                 f"Boosters: {guild.premium_subscription_count}\n" \
-                f"Maximum bitrate: {int(guild.bitrate_limit)} bits\n" \
+                f"Maximum bitrate: {int(guild.bitrate_limit)} hz\n" \
                 f"File size limit: {int(guild.filesize_limit / 1000000)}MB\n" \
                 f"Maximum number of emojis: {guild.emoji_limit}"
 
