@@ -119,9 +119,6 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
         if result[0]:
             return await send_embed(ctx, "ProtectedTag already exists.", negative=True)
 
-        cursor = await db.execute("Select count(*) from ProtectedTags where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchone()
-
         await db.execute("Insert into ProtectedTags values (?, ?, ?, ?, ?, ?, ?, ?)",
                          (ctx.guild.id, ctx.author.id, content, tag, 0, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
                           result[0] + 1, role.id))
