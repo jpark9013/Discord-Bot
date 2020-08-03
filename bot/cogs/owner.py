@@ -15,6 +15,7 @@ class Owner(commands.Cog, name="Owner"):
         self.bot = bot
         global db
         db = self.bot.db
+        self.change_status.start()
 
     @commands.is_owner()
     @commands.command()
@@ -91,6 +92,7 @@ class Owner(commands.Cog, name="Owner"):
         get rate limited if you put the number of seconds under 60."""
 
         try:
+            self.bot.x = 0
             self.bot.statuses = [status]
             status = list(status)
             for i in range(len(status) - 1):
@@ -144,8 +146,9 @@ class Owner(commands.Cog, name="Owner"):
     async def statuslist(self, ctx, *, statuses):
         """Manually make a changing status with each entry being in the list."""
 
-        statuses = statuses.replace("\n", self.bot.ON_SPLIT)
-        statuslist = statuses.split(self.bot.ON_SPLIT)
+        self.bot.x = 0
+        statuses = statuses.replace("\n", self.bot.split)
+        statuslist = statuses.split(self.bot.split)
         if len(statuslist) == 1:
             return await send_embed(ctx, "You cannot have a list with only 1 entry.", negative=True)
         self.bot.statuses = statuslist
@@ -162,8 +165,8 @@ class Owner(commands.Cog, name="Owner"):
         out where you would normally put a spacebar for the split. You can make the split as long or short as you want,
         as long as it's not 0 characters. It can even include spaces if you like!."""
 
-        self.bot.ON_SPLIT = split
-        await send_embed(f"Split changed to ``{split}``.")
+        self.bot.split = split
+        await send_embed(ctx, f"Split changed to ``{split}``.")
 
     @tasks.loop(seconds=60)
     async def change_status(self):

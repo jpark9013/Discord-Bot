@@ -1,5 +1,6 @@
 # import asyncio
 import json
+import logging
 import re
 import time
 from datetime import datetime
@@ -12,6 +13,9 @@ import discord
 from discord.ext import commands
 from bot.utils.message import to_embed
 from bot.utils.paginator import Paginator
+
+
+logging.basicConfig(level=logging.INFO)
 
 with open("token.txt", "r") as file:
     TOKEN = file.readline()
@@ -49,6 +53,7 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.invite_regex = re.compile("(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/?[a-zA-Z0-9]+/?")
         self.link_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
         self.emoji_regex = re.compile("<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>")
+        self.alpha_regex = re.compile("[^a-zA-Z]")
 
     async def con(self):
         self.db = await aiosqlite3.connect("DiscordServers.db")
@@ -107,7 +112,8 @@ class HumphreyGaming(commands.AutoShardedBot):
         if result and ctx.guild and ctx.channel.id not in json.loads(result[9]):
 
             if result[1]:
-                if message.content.isupper() and len(message.content) > 7:
+                sub = self.alpha_regex.sub("", message.content)
+                if sub.isupper() and len(sub) > 7:
                     return await message.delete()
 
             if result[2]:
@@ -150,7 +156,7 @@ class HumphreyGaming(commands.AutoShardedBot):
                     return await message.delete()
 
             if result[6]:
-                if len(self.emoji_regex.findall(message.content)) >= 10:
+                if len(self.emoji_regex.findall(message.content)) >= 7:
                     return await message.delete()
 
             if result[7]:
