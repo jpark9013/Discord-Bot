@@ -41,7 +41,7 @@ class HelpCommand(commands.Cog, name="Help"):
                          i.qualified_name not in OWNER_COMMAND_NAMES]
 
         if not name:
-            value = [f"-{i}\n" for i in cog_names_with_commands]
+            value = [f"``{i}``\n" for i in cog_names_with_commands]
 
             # Albert
             author = str(self.bot.get_user(439228325722849290) or await self.bot.fetch_user(439228325722849290))
@@ -49,10 +49,9 @@ class HelpCommand(commands.Cog, name="Help"):
             embed = discord.Embed(
                 title="Command Help",
                 description=f"By {author}\n "
-                            "```\n"
+                            "```py\n"
                             f"Type {prefix}help [module name] for more information on a module. (Don't type the "
-                            f"brackets)\n"
-                            "This also works for individual commands. Everything is case sensitive!"
+                            f"brackets) This also works for individual commands. Everything is case sensitive!"
                             "```"
             )
 
@@ -74,7 +73,7 @@ class HelpCommand(commands.Cog, name="Help"):
                 value = []
 
                 for index, command in enumerate(cog.get_commands(), start=1):
-                    value.append(f"{index}. {prefix}{command.qualified_name} {command.signature}")
+                    value.append(f"{index}. ``{prefix}{command.qualified_name} {command.signature}``")
 
                     if index % 10 == 0 or index == len(cog.get_commands()):
                         embed = discord.Embed(
@@ -98,11 +97,11 @@ class HelpCommand(commands.Cog, name="Help"):
                     return await send_embed(ctx, "Invalid category/command name", negative=True)
 
                 try:
-                    subcommands = ", ".join([i.name for i in command.commands])
+                    subcommands = ", ".join([f"``{i.name}``" for i in command.commands])
                 except AttributeError:
                     subcommands = "None"
 
-                aliases = ", ".join(command.aliases) if command.aliases else "None"
+                aliases = ", ".join([f"``{i}``" for i in command.aliases]) if command.aliases else "None"
 
                 description = f"**Subcommands: {subcommands}**\n" \
                               f"**Aliases: {aliases}**\n" \
