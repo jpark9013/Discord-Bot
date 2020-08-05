@@ -1,6 +1,8 @@
 from .automod import AutoMod
+from .corona import Corona
 from .errorhandler import ErrorHandler
 from .events import Events
+from .giveaway import Giveaway
 from .guildsetup import Guild_Setup
 from .help import HelpCommand
 from .info import Info
@@ -20,8 +22,10 @@ from .support import Support
 
 def setup(bot):
     bot.add_cog(AutoMod(bot))
+    bot.add_cog(Corona(bot))
     bot.add_cog(ErrorHandler(bot))
     bot.add_cog(Events(bot))
+    bot.add_cog(Giveaway(bot))
     bot.add_cog(Guild_Setup(bot))
     bot.add_cog(HelpCommand(bot))
     bot.add_cog(Info(bot))

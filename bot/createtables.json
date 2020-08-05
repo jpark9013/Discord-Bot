@@ -16,5 +16,6 @@
   "create table if not exists ProtectedTags(GuildID int not null, MemberID int not null, TagContent text not null, Tag text not null, Uses int not null, TimeCreated text not null, ID int not null, RoleID int, primary key(GuildID, Tag))",
   "create table if not exists AutoMod(GuildID int not null primary key, AllCaps bit, FastMessageSpam bit, DiscordInvites bit, Links bit, MassMention bit, EmojiSpam bit, Spoilers bit, Selfbot bit, IgnoredChannels JSON)",
   "create table if not exists FastMessageSpam(GuildID int not null, MemberID int not null, firstTime int, Times int, primary key(GuildID, MemberID))",
-  "create table if not exists Activity(MemberID int not null primary key, Activities JSON)"
+  "create table if not exists Activity(MemberID int not null primary key, Activities JSON)",
+  "create table if not exists Giveaway(MessageID int not null primary key, GuildID int, TimeEnding int, Members int, Ended bit, ChannelID int)"
 ]
