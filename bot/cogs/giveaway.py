@@ -107,7 +107,7 @@ class Giveaway(commands.Cog, name="Giveaway"):
         host = embed.description.split('\n')
         host = host[2]
 
-        async def end(description: str):
+        async def _end(description: str):
             new_embed = discord.Embed(
                 colour=discord.Colour.dark_grey(),
                 description=description
@@ -140,13 +140,13 @@ class Giveaway(commands.Cog, name="Giveaway"):
         try:
             a = thisreaction
         except:
-            await end(f"Could not determine winner!\n{host}")
+            await _end(f"Could not determine winner!\n{host}")
 
         members = [i for i in await thisreaction.users().flatten() if not i.bot and i in ctx.guild.members]
         winners = []
 
         if not members:
-            return await end(f"Could not determine winner!\n{host}")
+            return await _end(f"Could not determine winner!\n{host}")
 
         for i in range(result[0]):
             if not members:
@@ -156,12 +156,12 @@ class Giveaway(commands.Cog, name="Giveaway"):
             members.remove(member)
 
         if len(winners) == 1:
-            await end(f"Winner: {winners[0].mention}\n{host}")
+            await _end(f"Winner: {winners[0].mention}\n{host}")
             await ctx.send(f"Congratulations {winners[0].mention}! You won the **{embed.author.name}**!\n"
                            f"{message.jump_url}")
 
         else:
-            await end(f"Winners: {', '.join([i.mention for i in winners])}\n{host}")
+            await _end(f"Winners: {', '.join([i.mention for i in winners])}\n{host}")
             await ctx.send(f"Congratulations {', '.join([i.mention for i in winners[:-1]])}, "
                            f"and {winners[-1].mention}! You won the **{embed.author.name}**!\n"
                            f"{message.jump_url}")
@@ -269,87 +269,6 @@ class Giveaway(commands.Cog, name="Giveaway"):
         cursor = await db.execute("Select MessageID, GuildID, ChannelID from Giveaway where TimeEnding <= ? + 3 "
                                   "and Ended = ?", (time.time(), False))
         result = await cursor.fetchall()
-
-        for tup in result:
-            try:
-                msg = await self.bot.get_guild(tup[1]).get_channel(tup[2]).fetch_message(tup[0])
-            except:
-                await db.execute("Delete from Giveaway where MessageID = ?", (tup[0],))
-                await db.commit()
-                result.remove(tup)
-                continue
-
-            old_embed = msg.embeds[0]
-
-            description = old_embed.description.split("\n")
-            description[1] = "Time remaining: **3 seconds**"
-
-            embed = discord.Embed(
-                colour=discord.Colour.red(),
-                title="LAST CHANCE TO ENTER!!!",
-                description="\n".join(description)
-            )
-
-            embed.set_author(name=old_embed.author.name)
-
-            try:
-                await msg.edit(embed=embed)
-            except discord.Forbidden:
-                pass
-
-        for tup in result:
-            try:
-                msg = await self.bot.get_guild(tup[1]).get_channel(tup[2]).fetch_message(tup[0])
-            except:
-                await db.execute("Delete from Giveaway where MessageID = ?", (tup[0],))
-                await db.commit()
-                result.remove(tup)
-                continue
-
-            old_embed = msg.embeds[0]
-
-            description = old_embed.description.split("\n")
-            description[1] = "Time remaining: **2 seconds**"
-
-            embed = discord.Embed(
-                colour=discord.Colour.red(),
-                title="LAST CHANCE TO ENTER!!!",
-                description="\n".join(description)
-            )
-
-            embed.set_author(name=old_embed.author.name)
-
-            try:
-                await msg.edit(embed=embed)
-            except discord.Forbidden:
-                pass
-
-        for tup in result:
-            try:
-                msg = await self.bot.get_guild(tup[1]).get_channel(tup[2]).fetch_message(tup[0])
-            except:
-                await db.execute("Delete from Giveaway where MessageID = ?", (tup[0],))
-                await db.commit()
-                result.remove(tup)
-                continue
-
-            old_embed = msg.embeds[0]
-
-            description = old_embed.description.split("\n")
-            description[1] = "Time remaining: **1 second**"
-
-            embed = discord.Embed(
-                colour=discord.Colour.red(),
-                title="LAST CHANCE TO ENTER!!!",
-                description="\n".join(description)
-            )
-
-            embed.set_author(name=old_embed.author.name)
-
-            try:
-                await msg.edit(embed=embed)
-            except discord.Forbidden:
-                pass
 
         for tup in result:
             try:
