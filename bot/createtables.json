@@ -17,5 +17,6 @@
   "create table if not exists AutoMod(GuildID int not null primary key, AllCaps bit, FastMessageSpam bit, DiscordInvites bit, Links bit, MassMention bit, EmojiSpam bit, Spoilers bit, Selfbot bit, IgnoredChannels JSON)",
   "create table if not exists FastMessageSpam(GuildID int not null, MemberID int not null, firstTime int, Times int, primary key(GuildID, MemberID))",
   "create table if not exists Activity(MemberID int not null primary key, Activities JSON)",
-  "create table if not exists Giveaway(MessageID int not null primary key, GuildID int, TimeEnding int, Members int, Ended bit, ChannelID int)"
+  "create table if not exists Giveaway(MessageID int not null primary key, GuildID int, TimeEnding int, Members int, Ended bit, ChannelID int)",
+  "create table if not exists TriviaTop(GuildID int not null, MemberID int not null, Correct float, Total float, Score float, primary key(GuildID, MemberID))"
 ]

@@ -127,7 +127,7 @@ class Tags(commands.Cog, name="Tags"):
             colour=discord.Colour.blue()
         )
 
-        author = ctx.guild.get_member(result[0]) or await self.bot.fetch_member(result[0])
+        author = ctx.guild.get_member(result[0]) or await self.bot.fetch_user(result[0])
 
         embed.set_author(name=str(author), icon_url=str(author.avatar_url))
         embed.set_footer(text=f"Tag created at {result[2]}")

@@ -50,6 +50,8 @@ class Owner(commands.Cog, name="Owner"):
             embed.set_footer(text=f"Time: {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
 
             await channel.send(embed=embed)
+
+            await db.close()
             await self.bot.close()
 
         except Exception as e:
