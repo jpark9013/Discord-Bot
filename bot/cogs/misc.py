@@ -6,7 +6,7 @@ import discord
 import wikipedia
 from discord.ext import commands
 
-from bot.utils.message import send_embed, to_embed
+from bot.utils.format import send_embed, to_embed
 
 
 class Misc(commands.Cog):

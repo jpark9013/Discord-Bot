@@ -4,7 +4,7 @@ import time
 import discord
 from discord.ext import commands
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed
 
 
 async def sql_write(ctx, column, string):

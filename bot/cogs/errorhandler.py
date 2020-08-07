@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed, to_embed
 
 
 class ErrorHandler(commands.Cog):
@@ -42,3 +42,17 @@ class ErrorHandler(commands.Cog):
             return
         else:
             await send_embed(ctx, str(error), negative=True)
+            channel = self.bot.get_guild(721194829366951997).get_channel(735309492757069896)
+
+            embed = discord.Embed(
+                title="Error",
+                description=f"```py\n"
+                            f"{str(error)}\n"
+                            f"```",
+                colour=discord.Colour.red()
+            )
+            embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
+            embed.set_footer(text=f"Command/Content: {ctx.message.content} • Guild: {ctx.guild.name} "
+                                  f"(ID {ctx.guild.id}) • Channel: {ctx.channel.name} (ID {ctx.channel.id})")
+
+            await channel.send(embed=embed)

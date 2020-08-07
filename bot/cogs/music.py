@@ -6,7 +6,7 @@ import discord
 import youtube_dl
 from discord.ext import commands
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed
 
 # Suppress errors
 youtube_dl.utils.bug_reports_message = lambda: " "

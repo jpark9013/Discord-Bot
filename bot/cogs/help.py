@@ -4,7 +4,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from bot.utils.message import send_embed, to_embed
+from bot.utils.format import send_embed, to_embed
 
 
 class HelpCommand(commands.Cog, name="Help"):
@@ -26,12 +26,12 @@ class HelpCommand(commands.Cog, name="Help"):
 
         OWNER_COG_NAMES = []
 
-        if ctx.author.id != 648741756384575509 or (not ctx.guild or ctx.guild.id != 732980515807952897):
-            OWNER_COG_NAMES.append("SpreadSheets")
-
         if ctx.author.id != 648741756384575509:
             OWNER_COG_NAMES.append("Jishaku")
             OWNER_COG_NAMES.append("Owner")
+
+            if not ctx.guild or ctx.guild.id != 732980515807952897:
+                OWNER_COG_NAMES.append("SpreadSheets")
 
         OWNER_COMMAND_NAMES = [i.qualified_name for i in self.bot.walk_commands() if i.cog and i.cog.qualified_name
                                in OWNER_COG_NAMES]
@@ -40,7 +40,8 @@ class HelpCommand(commands.Cog, name="Help"):
         command_names = [i.qualified_name for i in self.bot.walk_commands() if
                          i.qualified_name not in OWNER_COMMAND_NAMES]
 
-        command_aliases = {i.qualified_name: [j for j in i.aliases] for i in self.bot.walk_commands()}
+        command_aliases = {i.qualified_name: [j for j in i.aliases] for i in self.bot.walk_commands() if
+                           i.qualified_name in command_names}
 
         for i, v in command_aliases.items():
             if name in v:
@@ -99,9 +100,6 @@ class HelpCommand(commands.Cog, name="Help"):
             elif name in command_names:
 
                 command = self.bot.get_command(name)
-
-                if command.cog.qualified_name == "Owner":
-                    return await send_embed(ctx, "Invalid category/command name", negative=True)
 
                 try:
                     subcommands = ", ".join([f"``{i.name}``" for i in command.commands])

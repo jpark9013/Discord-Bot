@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, tasks
 from prettytable import PrettyTable
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed, to_embed
 
 
 class Owner(commands.Cog, name="Owner"):
@@ -532,3 +532,29 @@ class Owner(commands.Cog, name="Owner"):
         embed.add_field(name="Miscallenous", value=value, inline=False)
 
         await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.is_owner()
+    async def sendtochannel(self, ctx, guildID: int, channelID: int, *, string):
+        """Send to a channel."""
+
+        try:
+            channel = self.bot.get_guild(guildID).get_channel(channelID)
+        except AttributeError:
+            channel = self.bot.get_channel(channelID)
+
+        await channel.send(string)
+        await send_embed(ctx, "Sent message.")
+
+    @commands.command()
+    @commands.is_owner()
+    async def sendembedtochannel(self, ctx, guildID: int, channelID: int, type: str, *, string):
+        """Send embed to channel."""
+
+        try:
+            channel = self.bot.get_guild(guildID).get_channel(channelID)
+        except AttributeError:
+            channel = self.bot.get_channel(channelID)
+
+        await channel.send(embed=to_embed(string, type))
+        await send_embed(ctx, "Sent embed.")

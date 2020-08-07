@@ -6,7 +6,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed, to_datetime
 
 
 def check(ctx):
@@ -91,14 +91,7 @@ class Info(commands.Cog, name="Info"):
         embed.set_author(name=str(self.bot.user), icon_url=str(self.bot.user.avatar_url))
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
 
-        days, remainder = divmod(time.time() - self.bot.startTime, 86400)
-        hours, remainder = divmod(remainder, 3600)
-        minutes, seconds = divmod(remainder, 60)
-
-        if days == 0:
-            uptime = f"Uptime: {int(hours)}h {int(minutes)}m {int(seconds)}s"
-        else:
-            uptime = f"Uptime: {int(days)}d {int(hours)}h {int(minutes)}m {int(seconds)}s"
+        uptime = f"Uptime: {to_datetime(time.time()-self.bot.startTime)}"
 
         embed.add_field(name="Info", value=f"{uptime}\n"
                                            f"Currently in **{len(self.bot.guilds)}** servers\n"
@@ -162,11 +155,8 @@ class Info(commands.Cog, name="Info"):
             v /= 2
             if i == "League of Legends":
                 hasleague = True
-                d, remainder = divmod(v, 86400)
-                h, remainder = divmod(remainder, 3600)
-                m, s = divmod(remainder, 60)
 
-                description = f"League time played: {int(d)}d {int(h)}h {int(m)}m {int(s)}s\n" \
+                description = f"League time played: {to_datetime(v)}\n" \
                               f"Since 07/25/2020 18:00:00"
                 break
 
@@ -203,14 +193,6 @@ class Info(commands.Cog, name="Info"):
                                 f"")
 
         total = sum(dict.values()) / 2
-        d, remainder = divmod(total, 86400)
-        h, remainder = divmod(remainder, 3600)
-        m, s = divmod(remainder, 60)
-
-        d = int(d)
-        h = int(h)
-        m = int(m)
-        s = int(s)
 
         descs = []
         embeds = []
@@ -224,7 +206,7 @@ class Info(commands.Cog, name="Info"):
                     description="\n".join(descs)
                 )
                 embed.set_author(name=str(member), icon_url=str(member.avatar_url))
-                embed.set_footer(text=f"Total time played on all activities: {d}d {h}h {m}m {s}s\n"
+                embed.set_footer(text=f"Total time played on all activities: {to_datetime(total)}\n"
                                       f"Since 07/25/2020/ 18:00:00")
 
                 embeds.append(embed)

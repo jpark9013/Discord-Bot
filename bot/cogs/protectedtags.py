@@ -3,7 +3,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed
 
 
 def can_change(ctx, memberID):

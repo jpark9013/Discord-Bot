@@ -5,7 +5,7 @@ import aiotrivia
 import discord
 from discord.ext import commands
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed
 
 
 class Trivia(commands.Cog, name="Trivia"):
@@ -41,7 +41,7 @@ class Trivia(commands.Cog, name="Trivia"):
             "entertainment: cartoon & animations": 32
         }
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     @commands.group(invoke_without_command=True, aliases=["quiz"])
     async def trivia(self, ctx, type=None, difficulty=None, *, category=None):
         """Get a trivia question. Possible types are ``multiple`` or ``true/false``. Possible levels of difficulty are

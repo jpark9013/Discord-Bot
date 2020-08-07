@@ -5,7 +5,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from bot.utils.message import send_embed, to_embed
+from bot.utils.format import send_embed, to_embed
 
 
 class Guild_Setup(commands.Cog, name="Guild Setup"):

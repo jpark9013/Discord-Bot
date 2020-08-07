@@ -3,7 +3,7 @@ import json
 import discord
 from discord.ext import commands
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed
 
 
 class Todo(commands.Cog, name="To Do"):

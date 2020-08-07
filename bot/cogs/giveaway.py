@@ -6,7 +6,43 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.message import send_embed
+from bot.utils.format import send_embed, to_datetime
+
+
+def custom_datetime(seconds):
+    w, remainder = divmod(seconds, 604800)
+    d, remainder = divmod(remainder, 86400)
+    h, remainder = divmod(remainder, 3600)
+    m, s = divmod(remainder, 60)
+
+    w = int(w)
+    d = int(d)
+    h = int(h)
+    m = int(m)
+    s = int(s)
+
+    string = ["Time remaining:"]
+
+    if w:
+        string.append(f"{w} weeks")
+    if d:
+        string.append(f"{d} days")
+    if h:
+        string.append(f"{h} hours")
+    if m:
+        string.append(f"{m} minutes")
+
+    if w or d or h or m:
+        string.append(f"and {s} seconds")
+    else:
+        string.append(f"{s} seconds")
+
+    if len(string) > 3:
+        string = ", ".join(string)
+    else:
+        string = " ".join(string)
+
+    return string
 
 
 class Giveaway(commands.Cog, name="Giveaway"):
@@ -46,41 +82,9 @@ class Giveaway(commands.Cog, name="Giveaway"):
         if result[0] >= 20:
             return await send_embed(ctx, "Maximum of 20 giveaways in the server.", negative=True)
 
-        w, remainder = divmod(seconds, 604800)
-        d, remainder = divmod(remainder, 86400)
-        h, remainder = divmod(remainder, 3600)
-        m, s = divmod(remainder, 60)
-
-        w = int(w)
-        d = int(d)
-        h = int(h)
-        m = int(m)
-        s = int(s)
-
-        string = ["Time remaining:"]
-
-        if w:
-            string.append(f"{w} weeks")
-        if d:
-            string.append(f"{d} days")
-        if h:
-            string.append(f"{h} hours")
-        if m:
-            string.append(f"{m} minutes")
-
-        if w or d or h or m:
-            string.append(f"and {s} seconds")
-        else:
-            string.append(f"{s} seconds")
-
-        if len(string) > 3:
-            string = ", ".join(string)
-        else:
-            string = " ".join(string)
-
         embed = discord.Embed(
             description=f"React with <:tada:740055373926367383> to enter!\n"
-                        f"{string}\n"
+                        f"{custom_datetime(seconds)}\n"
                         f"Hosted by: {ctx.author.mention}",
             colour=discord.Colour.green()
         )
@@ -304,42 +308,10 @@ class Giveaway(commands.Cog, name="Giveaway"):
 
             seconds = tup[3] - current_time
 
-            w, remainder = divmod(seconds, 604800)
-            d, remainder = divmod(remainder, 86400)
-            h, remainder = divmod(remainder, 3600)
-            m, s = divmod(remainder, 60)
-
-            w = int(w)
-            d = int(d)
-            h = int(h)
-            m = int(m)
-            s = int(s)
-
-            string = ["Time remaining:"]
-
-            if w:
-                string.append(f"{w} weeks")
-            if d:
-                string.append(f"{d} days")
-            if h:
-                string.append(f"{h} hours")
-            if m:
-                string.append(f"{m} minutes")
-
-            if w or d or h or m:
-                string.append(f"and {s} seconds")
-            else:
-                string.append(f"{s} seconds")
-
-            if len(string) > 3:
-                string = ", ".join(string)
-            else:
-                string = " ".join(string)
-
             old_embed = msg.embeds[0]
 
             description = old_embed.description.split("\n")
-            description[1] = string
+            description[1] = custom_datetime(seconds)
 
             embed = discord.Embed(
                 description="\n".join(description),
