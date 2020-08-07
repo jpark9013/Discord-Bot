@@ -46,7 +46,8 @@ class Trivia(commands.Cog, name="Trivia"):
     async def trivia(self, ctx, type=None, difficulty=None, *, category=None):
         """Get a trivia question. Possible types are ``multiple`` or ``true/false``. Possible levels of difficulty are
         ``easy``, ``medium``, and ``hard``. Do ``categories`` for the full list of categories.
-        You have two minutes to respond."""
+        You have two minutes to respond. Also to count a question towards the leaderboard/stats you have to leave all
+        arguments blank or random."""
 
         typeR = False
         diffR = False

@@ -40,6 +40,13 @@ class HelpCommand(commands.Cog, name="Help"):
         command_names = [i.qualified_name for i in self.bot.walk_commands() if
                          i.qualified_name not in OWNER_COMMAND_NAMES]
 
+        command_aliases = {i.qualified_name: [j for j in i.aliases] for i in self.bot.walk_commands()}
+
+        for i, v in command_aliases.items():
+            if name in v:
+                name = i
+                break
+
         if not name:
             value = [f"``{i}``\n" for i in cog_names_with_commands]
 
