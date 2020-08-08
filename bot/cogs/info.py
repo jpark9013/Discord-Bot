@@ -103,20 +103,22 @@ class Info(commands.Cog, name="Info"):
                   f"(https://discord.com/api/oauth2/authorize?client_id=718287109030543370&permissions=8&scope=bot)",
         )
 
-        embed.add_field(
-            name="Github",
-            value="[Click me](https://github.com/jpark9013/HumphreyGaming)",
-        )
+        if ctx.guild.id in (732980515807952897, 721194829366951997):
+            embed.add_field(
+                name="Github",
+                value="[Click me](https://github.com/jpark9013/HumphreyGaming)",
+            )
 
         embed.add_field(
             name="top.gg link",
             value="[Vote for me here](https://top.gg/bot/718287109030543370)"
         )
 
-        embed.add_field(
-            name="Check out my other projects!",
-            value="[Asyncio wrapper for CodeForces](https://github.com/jpark9013/aiocodeforces)"
-        )
+        if ctx.guild.id in (732980515807952897, 721194829366951997):
+            embed.add_field(
+                name="Check out my other projects!",
+                value="[Asyncio wrapper for CodeForces](https://github.com/jpark9013/aiocodeforces)"
+            )
 
         try:
             mention = (self.bot.get_user(439228325722849290) or await self.bot.fetch_user(439228325722849290)).mention
@@ -140,29 +142,18 @@ class Info(commands.Cog, name="Info"):
     async def kevinstimeplayingleague(self, ctx):
         """Get Kevin's time playing league"""
 
-        cursor = await db.execute("Select Activities from Activity where MemberID = ?", (547796508221767692,))
+        cursor = await db.execute("Select Time from Activity where MemberID = ? and Thing like ?",
+                                  (547796508221767692, "League of Legends"))
         result = await cursor.fetchone()
 
         if not result or not result[0]:
             return await send_embed(ctx, "Kevin probably hid his League activity so the bot can't see it.",
                                     negative=True)
 
-        dict = json.loads(result[0])
+        v = result[0]/2
 
-        hasleague = False
-
-        for i, v in dict.items():
-            v /= 2
-            if i == "League of Legends":
-                hasleague = True
-
-                description = f"League time played: {to_datetime(v)}\n" \
-                              f"Since 07/25/2020 18:00:00"
-                break
-
-        if not hasleague:
-            return await send_embed(ctx, "Kevin probably hid his League activity so the bot can't see it.",
-                                    negative=True)
+        description = f"League time played: {to_datetime(v)}\n" \
+                      f"Since 07/25/2020 18:00:00"
 
         await send_embed(ctx, description, info=True)
 
@@ -179,7 +170,7 @@ class Info(commands.Cog, name="Info"):
         result = await cursor.fetchall()
 
         if not result:
-            return await send_embed(ctx, "Bot has not logged any activities for the given member.")
+            return await send_embed(ctx, "Bot has not logged any activities for the given member.", negative=True)
 
         descriptions = []
 

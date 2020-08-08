@@ -19,11 +19,14 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         with open("prefixes.json", "r") as prefixes_file:
             prefixes = json.load(prefixes_file)
 
-        if str(guild.id) not in prefixes:
+        if str(guild.id) not in prefixes.keys():
             prefixes[str(guild.id)] = ";"
 
         with open("prefixes.json", "w") as prefixes_file:
             json.dump(prefixes, prefixes_file, indent=4)
+
+        if str(guild.id) not in self.bot.prefixes.keys():
+            self.bot.prefixes[str(guild.id)] = ";"
 
         cursor = await db.execute("Select count(*) from Logging where GuildID = ?", (guild.id,))
         result = await cursor.fetchone()
@@ -47,9 +50,11 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command()
     @commands.guild_only()
-    @commands.has_permissions(administrator=True)
     async def changeprefix(self, ctx, prefix: str):
         """Change the bot prefix for the server."""
+
+        if not ctx.author.guild_permissions.administrator and ctx.author.id != 648741756384575509:
+            return await send_embed(ctx, "You do not have permission to do that.", negative=True)
 
         if len(prefix) > 5:
             return await send_embed(ctx, f"You cannot have a prefix more than 5 characters long.")
@@ -60,6 +65,8 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
 
         with open("prefixes.json", "w") as prefixes_file:
             json.dump(prefixes, prefixes_file, indent=4)
+
+        self.bot.prefixes[str(ctx.guild.id)] = prefix
 
         await send_embed(ctx, f"Guild prefix changed to ``{prefix}``.")
 

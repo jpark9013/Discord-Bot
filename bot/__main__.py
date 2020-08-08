@@ -24,12 +24,10 @@ with open("token.txt", "r") as file:
 class HumphreyGaming(commands.AutoShardedBot):
     def __init__(self):
 
-        def get_prefix(self, message):
-            with open("prefixes.json", "r") as f:
-                prefixes = json.load(f)
+        def get_prefix(bot, message):
 
             try:
-                return prefixes[str(message.guild.id)]
+                return self.prefixes[str(message.guild.id)]
             except KeyError:
                 return ";"
 
@@ -54,6 +52,9 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.link_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
         self.emoji_regex = re.compile("<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>")
         self.alpha_regex = re.compile("[^a-zA-Z]")
+
+        with open("prefixes.json", "r") as f:
+            self.prefixes = json.load(f)
 
     async def con(self):
         self.db = await aiosqlite3.connect("DiscordServers.db")
@@ -182,8 +183,18 @@ class HumphreyGaming(commands.AutoShardedBot):
 
         content = message.content.lower().split()
 
-        for channel_id, word_id in result:
-            if channel_id == ctx.channel.id or word_id.lower() in content:
+        for tup in result:
+
+            try:
+                channel_id = tup[0]
+            except IndexError:
+                channel_id = None
+            try:
+                word = tup[1]
+            except IndexError:
+                word = None
+
+            if channel_id == ctx.channel.id or word.lower() in content:
                 return await message.delete()
 
         if ctx.author.id in blacklist["members"]:
