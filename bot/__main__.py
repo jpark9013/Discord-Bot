@@ -89,15 +89,6 @@ class HumphreyGaming(commands.AutoShardedBot):
             description="Bot is online."
         )
 
-        with open("createtables.json", "r") as file:
-            """List of Database tables to create"""
-
-            create_tables = json.load(file)
-
-        for i in create_tables:
-            await self.db.execute(i)
-            await self.db.commit()
-
         embed.set_footer(text=f"Time: {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
 
         await self.wait_until_ready()

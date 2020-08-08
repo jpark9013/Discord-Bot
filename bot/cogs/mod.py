@@ -37,7 +37,6 @@ async def insufficient_permissions(ctx, member):
 
 
 async def sql_write(ctx, member: discord.Member, minutes, mute=False, ban=False):
-
     if mute:
         await db.execute("Insert into Timestamps values (?, ?, ?, ?)",
                          (ctx.guild.id, member.id, time.time() + minutes, None))
@@ -433,7 +432,7 @@ class Mod(commands.Cog, name="Moderator"):
         if limit == 0 or limit > 99:
             return await send_embed(ctx, "Invalid number of messages to prune.", negative=True)
 
-        await ctx.channel.purge(limit=limit+1)
+        await ctx.channel.purge(limit=limit + 1)
 
         embed = discord.Embed(
             colour=discord.Colour.green(),
@@ -629,7 +628,6 @@ class Mod(commands.Cog, name="Moderator"):
         await write_infractions(ctx, member, "Softban", reason=reason)
 
         await send_embed(ctx, "Member softbanned.")
-
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
