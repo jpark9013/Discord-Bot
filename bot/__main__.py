@@ -88,7 +88,19 @@ class HumphreyGaming(commands.AutoShardedBot):
             colour=discord.Colour.green(),
             description="Bot is online."
         )
+
+        with open("createtables.json", "r") as file:
+            """List of Database tables to create"""
+
+            create_tables = json.load(file)
+
+        for i in create_tables:
+            await self.db.execute(i)
+            await self.db.commit()
+
         embed.set_footer(text=f"Time: {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
+
+        await self.wait_until_ready()
 
         await channel.send(embed=embed)
 
@@ -97,7 +109,6 @@ class HumphreyGaming(commands.AutoShardedBot):
                message.channel.permissions_for(message.guild.me).send_messages
 
     async def on_message(self, message):
-
         ctx = await self.get_context(message)
 
         with open("blacklist.json") as f:
@@ -109,7 +120,13 @@ class HumphreyGaming(commands.AutoShardedBot):
         cursor = await self.db.execute("Select * from AutoMod where GuildID = ?", (ctx.guild.id,))
         result = await cursor.fetchone()
 
-        if result and ctx.guild and ctx.channel.id not in json.loads(result[9]):
+        cursor = await self.db.execute("Select ChannelID from AutoModIgnoredChannels where GuildID = ?",
+                                       (ctx.guild.id,))
+        ignoredchannels = await cursor.fetchall()
+
+        ignoredchannels = [i[0] for i in ignoredchannels]
+
+        if result and ctx.guild and ctx.channel.id not in ignoredchannels:
 
             if result[1]:
                 sub = self.alpha_regex.sub("", message.content)
@@ -169,20 +186,14 @@ class HumphreyGaming(commands.AutoShardedBot):
                     cmd = self.get_command("ban")
                     return await cmd(ctx, member=ctx.author, reason="Selfbot detected")
 
-        cursor = await self.db.execute("Select Channels, Words from Blacklist where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchone()
+        cursor = await self.db.execute("Select ChannelID, Word from Blacklist where GuildID = ?", (ctx.guild.id,))
+        result = await cursor.fetchall()
 
-        if result:
-            if not ctx.author.guild_permissions.administrator:
-                for i in json.loads(result[1]):
-                    if i in message.content.split():
-                        try:
-                            return await message.delete()
-                        except discord.Forbidden:
-                            return
+        content = message.content.lower().split()
 
-            if ctx.channel.id in json.loads(result[0]):
-                return
+        for channel_id, word_id in result:
+            if channel_id == ctx.channel.id or word_id.lower() in content:
+                return await message.delete()
 
         if ctx.author.id in blacklist["members"]:
             return
@@ -199,6 +210,8 @@ class HumphreyGaming(commands.AutoShardedBot):
         await self.process_commands(message)
 
     async def on_command(self, ctx):
+
+        await self.wait_until_ready()
 
         if isinstance(ctx.channel, discord.DMChannel):
             embed = discord.Embed(

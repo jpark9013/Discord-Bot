@@ -1,12 +1,10 @@
-import json
-
 import discord
 from discord.ext import commands
 
 from bot.utils.format import send_embed
 
 
-class Todo(commands.Cog, name="To Do"):
+class Todo(commands.Cog, name="Todo"):
     def __init__(self, bot):
         self.bot = bot
         global db
@@ -14,19 +12,16 @@ class Todo(commands.Cog, name="To Do"):
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.group(invoke_without_command=True)
-    async def todo(self, ctx):
-        """Access your to-do list."""
+    async def Todo(self, ctx):
+        """Access your To-do list."""
 
-        cursor = await db.execute("Select TodoList from Todo where MemberID = ?", (ctx.author.id,))
-        result = await cursor.fetchone()
-
-        if not result:
-            return await send_embed(ctx, "You do not have anything on your to-do list.", negative=True)
-
-        result = json.loads(result[0])
+        cursor = await db.execute("Select Thing from Todo where MemberID = ?", (ctx.author.id,))
+        result = await cursor.fetchall()
 
         if not result:
-            return await send_embed(ctx, "You do not have anything on your note list.", negative=True)
+            return await send_embed(ctx, "You do not have anything on your todo list.", negative=True)
+
+        result = [i[0] for i in result]
 
         embeds = []
         description = []
@@ -47,59 +42,47 @@ class Todo(commands.Cog, name="To Do"):
         await self.bot.paginate(ctx, embeds)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @todo.command(aliases=["add"])
+    @Todo.command(aliases=["add"])
     async def create(self, ctx, *, string: str):
-        """Create a to-do."""
+        """Create a note."""
 
-        cursor = await db.execute("Select TodoList from Todo where MemberID = ?", (ctx.author.id,))
-        result = await cursor.fetchone()
+        await db.execute("Insert into Todo values (?, ?, (select count(*) from Todo where MemberID = ?) + 1)",
+                         (ctx.author.id, string, ctx.author.id))
+        await db.commit()
 
-        if result:
-            result = json.loads(result[0])
-            result.append(string)
-            await db.execute("Update Todo set TodoList = ? where MemberID = ?", (json.dumps(result), ctx.author.id))
-            await db.commit()
-
-        else:
-            await db.execute("Insert into Todo values (?, ?)", (ctx.author.id, json.dumps([string])))
-            await db.commit()
-
-        await send_embed(ctx, "Created new to-do task.")
+        await send_embed(ctx, "Created new note.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @todo.command(aliases=["remove"])
-    async def delete(self, ctx, index: int):
-        """Remove a to-do based on its index."""
+    @Todo.command(aliases=["remove"])
+    async def delete(self, ctx, ID: int):
+        """Remove a note based on its ID."""
 
-        cursor = await db.execute("Select TodoList from Todo where MemberID = ?", (ctx.author.id,))
+        cursor = await db.execute("Select count(*) from Todo where MemberID = ?", (ctx.author.id,))
         result = await cursor.fetchone()
 
         if not result:
             return await send_embed(ctx, "You do not have any to-do's to delete.", negative=True)
 
-        result = json.loads(result[0])
+        if ID < 1 or ID > result[0]:
+            return await send_embed(ctx, "Invalid ID to delete.", negative=True)
 
-        if index > len(result) or index < 1:
-            return await send_embed(ctx, "Invalid index to delete.", negative=True)
-
-        del result[index - 1]
-        await db.execute("Update Todo set TodoList = ? where MemberID = ?", (json.dumps(result), ctx.author.id))
+        await db.execute("Delete from Todo where MemberID = ? and ID = ?", (ctx.author.id, ID))
         await db.commit()
 
-        await send_embed(ctx, "To-do deleted.")
+        await send_embed(ctx, "Note deleted.")
 
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @todo.command()
+    @Todo.command()
     async def clear(self, ctx):
-        """Clear your to-do list."""
+        """Clear your note list."""
 
-        cursor = await db.execute("Select TodoList from Todo where MemberID = ?", (ctx.author.id,))
+        cursor = await db.execute("Select count(*) from Todo where MemberID = ?", (ctx.author.id,))
         result = await cursor.fetchone()
 
-        if not result:
-            return await send_embed(ctx, "You do not have any to-do's.", negative=True)
+        if not result[0]:
+            return await send_embed(ctx, "You do not have any Todo.", negative=True)
 
-        await db.execute("Update Todo set TodoList = ? where MemberID = ?", (json.dumps([]), ctx.author.id))
+        await db.execute("Delete from Todo where MemberID = ?", (ctx.author.id,))
         await db.commit()
 
-        await send_embed(ctx, "Entire to-do cleared.")
+        await send_embed(ctx, "All Todo cleared.")

@@ -118,15 +118,17 @@ class Logging(commands.Cog, name="Logging"):
         for logging, the former channel for logging will still be in the ignored channels list unless you manually
         remove it."""
 
-        cursor = await db.execute("Select IgnoredChannelID from Logging where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchone()
-        jsonlist = json.loads(result[0])
+        cursor = await db.execute("Select count(*) from Logging where ChannelID = ?", (channel.id,))
+        result = await cursor.fetchall()
 
-        if channel.id not in jsonlist:
-            jsonlist.append(channel.id)
+        if result[0]:
+            return await send_embed(ctx, "Logging is already set to that channel.", negative=True)
 
-        await db.execute("Update Logging set ChannelID = ?, IgnoredChannelID = ? where GuildID = ?",
-                         (channel.id, json.dumps(jsonlist), ctx.guild.id))
+        await db.execute("Update Logging set ChannelID = ? where GuildID = ?",
+                         (channel.id, ctx.guild.id))
+        await db.commit()
+
+        await db.execute("Insert or replace into LoggingIgnoredChannels values (?, ?)", (ctx.guild.id, channel.id))
         await db.commit()
 
         await send_embed(ctx, f"Set logging to <#{channel.id}>.")
@@ -139,40 +141,34 @@ class Logging(commands.Cog, name="Logging"):
                                                              discord.VoiceChannel, discord.CategoryChannel]):
         """Ignore a text, voice, or category channel."""
 
-        cursor = await db.execute("Select IgnoredChannelID, ChannelID from Logging where GuildID = ?",
+        cursor = await db.execute("Select IgnoredChannelID from LoggingIgnoredChannels where GuildID = ?",
                                   (ctx.guild.id,))
+        ignoredchannels = await cursor.fetchall()
+
+        ignoredchannels = [i[0] for i in ignoredchannels]
+
+        cursor = await db.execute("Select ChannelID from Logging where GuildID = ?", (ctx.guild.id,))
         result = await cursor.fetchone()
 
-        jsonlist = json.loads(result[0])
-
-        if result[1] in jsonlist:
+        if channel.id in ignoredchannels and channel.id == result[0]:
             return await send_embed(ctx, "Cannot unignore the logging channel.", negative=True)
 
-        if channel.id not in jsonlist:
-            jsonlist.append(channel.id)
-            await db.execute("Update Logging set IgnoredChannelID = ? where GuildID = ?",
-                             (json.dumps(jsonlist), ctx.guild.id))
+        if channel.id not in ignoredchannels:
+            await db.execute("Insert into LoggingIgnoredChannels values (?, ?)", (channel.id, ctx.guild.id))
             await db.commit()
-
-            if isinstance(channel, discord.TextChannel):
-                await send_embed(ctx, f"Channel ``<#{channel.id}>`` ignored in logging.")
-            elif isinstance(channel, discord.VoiceChannel):
-                await send_embed(ctx, f"Voice channel ``<#{channel.id}>`` ignored in logging.")
-            elif isinstance(channel, discord.CategoryChannel):
-                await send_embed(ctx, f"Category ``<#{channel.id}>`` ignored in logging.")
+            string = "ignored"
 
         else:
-            jsonlist.remove(channel.id)
-            await db.execute("Update Logging set IgnoredChannelID = ? where GuildID = ?",
-                             (json.dumps(jsonlist), ctx.guild.id))
+            await db.execute("Delete from LoggingIgnoredChannels where IgnoredChannelID = ?", (channel.id,))
             await db.commit()
+            string = "unignored"
 
-            if isinstance(channel, discord.TextChannel):
-                await send_embed(ctx, f"Channel ``<#{channel.id}>`` unignored in logging.")
-            elif isinstance(channel, discord.VoiceChannel):
-                await send_embed(ctx, f"Voice channel ``<#{channel.id}>`` unignored in logging.")
-            elif isinstance(channel, discord.CategoryChannel):
-                await send_embed(ctx, f"Category ``<#{channel.id}>`` unignored in logging.")
+        if isinstance(channel, discord.TextChannel):
+            await send_embed(ctx, f"Channel ``<#{channel.id}>`` {string} in logging.")
+        elif isinstance(channel, discord.VoiceChannel):
+            await send_embed(ctx, f"Voice channel ``<#{channel.id}>`` {string} in logging.")
+        elif isinstance(channel, discord.CategoryChannel):
+            await send_embed(ctx, f"Category ``<#{channel.id}>`` {string} in logging.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @log.command()

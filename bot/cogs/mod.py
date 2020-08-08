@@ -36,52 +36,31 @@ async def insufficient_permissions(ctx, member):
                                 negative=True)
 
 
-async def sql_write(ctx, id, minutes, db, mute=False, ban=False):
-    if minutes == -1:
-        return
+async def sql_write(ctx, member: discord.Member, minutes, mute=False, ban=False):
 
-    cursor = await db.execute("Select count(*) from Timestamps where GuildID = ? and MemberID = ?", (ctx.guild.id, id))
-    result = await cursor.fetchone()
+    if mute:
+        await db.execute("Insert into Timestamps values (?, ?, ?, ?)",
+                         (ctx.guild.id, member.id, time.time() + minutes, None))
+        await db.commit()
 
-    if result[0]:
-        if mute:
-            await db.execute("Update Timestamps set Timeunmuted = ? where GuildID = ? and MemberID = ?",
-                             (time.time() + minutes * 60, ctx.guild.id, id))
+        for role in member.roles:
+            await db.execute("Insert into TimestampsRoles values (?, ?, ?)", (ctx.guild.id, member.id, role.id))
             await db.commit()
 
-    else:
-        if mute:
-            roles = [i.id for i in ctx.guild.get_member(id).roles]
-            await db.execute("Insert into Timestamps values (?, ?, ?, ?, ?)",
-                             (ctx.guild.id, id, time.time() + minutes, None, json.dumps(roles)))
-            await db.commit()
-
-        elif ban:
-            await db.execute("Insert into Timestamps values (?, ?, ?, ?, ?)",
-                             (ctx.guild.id, id, None, time.time() + minutes, None))
-
-
-async def get_infractions(ctx, member, db):
-    cursor = await db.execute("Select Infractions from Infractions where GuildID = ? and MemberID = ?",
-                              (ctx.guild.id, member.id))
-    result = await cursor.fetchone()
-    if not result:
-        return []
-    return json.loads(result[0])
-
-
-async def write_infractions(ctx, memberID, db, infractions):
-    cursor = await db.execute("Select count(*) from Infractions where GuildID = ? and MemberID = ?",
-                              (ctx.guild.id, memberID))
-    result = await cursor.fetchone()
-
-    if not result[0]:
-        await db.execute("Insert into Infractions values (?, ?, ?)", (ctx.guild.id, memberID, infractions))
+    elif ban:
+        await db.execute("Insert into Timestamps values (?, ?, ?, ?)",
+                         (ctx.guild.id, member.id, None, time.time() + minutes))
         await db.commit()
-    else:
-        await db.execute("Update Infractions set Infractions = ? where GuildID = ? and MemberID = ?",
-                         (infractions, ctx.guild.id, memberID))
-        await db.commit()
+
+
+async def write_infractions(ctx, member: discord.Member, type: str, minutes: float = None, reason: str = None):
+    current_time = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+
+    await db.execute("Insert into Infractions values (?, ?, ?, ?, ?, ?, ?, "
+                     "(Select count(Type) from Infractions where GuildID = ? and MemberID = ?) + 1)",
+                     (ctx.guild.id, member.id, type, reason, current_time, ctx.author.id, minutes, ctx.guild.id,
+                      member.id))
+    await db.commit()
 
 
 async def action_message_send(minutes, ctx, member, action: str):
@@ -120,7 +99,7 @@ class Mod(commands.Cog, name="Moderator"):
         roles.append(muterole)
         await ctx.author.edit(roles=roles)
 
-        await sql_write(ctx, ctx.author.id, minutes, db, mute=True)
+        await sql_write(ctx, ctx.author, minutes, mute=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
@@ -222,11 +201,9 @@ class Mod(commands.Cog, name="Moderator"):
         if mute_role in member.roles:
             return await send_embed(ctx, "Member already muted.", negative=True)
 
-        await sql_write(ctx, member.id, minutes, db, mute=True)
+        await sql_write(ctx, member, minutes, mute=True)
 
-        infractions = await get_infractions(ctx, member, db)
-        infractions.append(["Mute", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id, minutes])
-        await write_infractions(ctx, member.id, db, json.dumps(infractions))
+        await write_infractions(ctx, member, "Mute", minutes, reason)
 
         await member.edit(roles=[mute_role])
 
@@ -261,13 +238,11 @@ class Mod(commands.Cog, name="Moderator"):
         except Exception:
             pass
 
-        infractions = await get_infractions(ctx, member, db)
-        infractions.append(["Ban", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id, minutes])
-        await write_infractions(ctx, member.id, db, json.dumps(infractions))
+        await write_infractions(ctx, member, "Ban", minutes, reason)
 
         await ctx.guild.ban(member, reason=reason)
         await action_message_send(minutes, ctx, member, "banned")
-        await sql_write(ctx, member.id, minutes, db, ban=True)
+        await sql_write(ctx, member, minutes, ban=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
@@ -294,9 +269,7 @@ class Mod(commands.Cog, name="Moderator"):
         result = await cursor.fetchone()
 
         try:
-            infractions = await get_infractions(ctx, member, db)
-            infractions.append(["Unmute", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, member.id, db, json.dumps(infractions))
+            await write_infractions(ctx, member, "Unmute", reason=reason)
 
             await member.edit(roles=[ctx.guild.get_role(roleID) for roleID in json.loads(result[0])
                                      if ctx.guild.get_role(roleID)])
@@ -320,9 +293,7 @@ class Mod(commands.Cog, name="Moderator"):
         try:
             m = discord.Object(id=member)
 
-            infractions = await get_infractions(ctx, m, db)
-            infractions.append(["Unban", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, m.id, db, json.dumps(infractions))
+            await write_infractions(ctx, m, "Unban", reason=reason)
 
             await ctx.guild.unban(m, reason=reason)
             await send_embed(ctx, f"Unbanned member with ID ``{m.id}``")
@@ -344,9 +315,7 @@ class Mod(commands.Cog, name="Moderator"):
         try:
             await ctx.guild.kick(member, reason=reason)
 
-            infractions = await get_infractions(ctx, member, db)
-            infractions.append(["Kick", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, member.id, db, json.dumps(infractions))
+            await write_infractions(ctx, member, "Kick", reason=None)
 
             await send_embed(ctx, f"{member.mention} was kicked.")
 
@@ -380,59 +349,64 @@ class Mod(commands.Cog, name="Moderator"):
 
         await self.bot.wait_until_ready()
 
-        cursor = await db.execute("select GuildID, MemberID, Roles from Timestamps "
-                                  "where Timeunmuted <= ?", (time.time(),))
-        # Checking muted members first
-
-        result = await cursor.fetchall()
-        for row in result:
-            roles_to_add = []
-
-            try:
-                guild = self.bot.get_guild(row[0])
-
-                for roleID in json.loads(row[2]):
-                    try:
-                        roles_to_add.append(guild.get_role(roleID))
-                    except:
-                        pass
-
-                await guild.get_member(row[1]).edit(roles=roles_to_add)
-
-            except:
-                pass
-
-        try:
-            await db.execute("delete from Timestamps where Timeunmuted <= ?", (time.time(),))
-            await db.commit()
-        except sqlite3.OperationalError:
-            pass
-        except sqlite3.DatabaseError:
-            pass
-
-        cursor = await db.execute("select GuildID, MemberID from Timestamps where Timeunbanned <= ?",
-                                  (time.time(),))
-
-        # Here checking banned members
-
+        # Do mute AND ban members, do mute first
+        cursor = await db.execute("Select GuildID, MemberID from Timestamps where Timeunbanned <= ? "
+                                  "and Timeunmuted != -1", (time.time(),))
         result = await cursor.fetchall()
 
-        for row in result:
+        for guild_id, member_id in result:
+            guild = self.bot.get_guild(guild_id)
+            if not guild:
+                continue
+
+            member = discord.Object(member_id)
             try:
-                await self.bot.get_guild(row[0]).unban(discord.Object(id=row[1]))
+                await guild.unban(member)
+            except discord.Forbidden:
+                continue
 
-            except:
-                pass
+        cursor = await db.execute("Select GuildID, MemberID from Timestamps "
+                                  "inner join TimestampsRoles on TimestampsRoles.RoleGuildID = Timestamps.GuildID "
+                                  "and TimestampsRoles.RoleMemberID = Timestamps.MemberID "
+                                  "where Timeunmuted <= ? "
+                                  "and Timeunmuted != -1 ", (time.time(),))
+        result = await cursor.fetchall()
 
-        try:
-            await db.execute("delete from Timestamps where (Timeunbanned <= ? and Timeunbanned != 0)",
-                             (time.time(),))
-            await db.commit()
+        if not result:
+            return
 
-        except sqlite3.OperationalError:
-            pass
-        except sqlite3.DatabaseError:
-            pass
+        a, b = result[0][0], result[0][1]
+
+        roles = []
+
+        for tup in result:
+
+            guild_id = tup[0]
+            member_id = tup[1]
+            try:
+                role_id = tup[2]
+            except IndexError:
+                role_id = None
+
+            if not self.bot.get_guild(guild_id):
+                continue
+
+            if a != guild_id and b != member_id:
+                try:
+                    member = self.bot.get_guild(a).get_member(b)
+                    await member.edit(roles=roles)
+                except AttributeError:
+                    pass
+                except discord.Forbidden:
+                    pass
+
+                a, b = guild_id, member_id
+                roles = []
+
+            else:
+                if not self.bot.get_guild(guild_id).get_role(role_id):
+                    continue
+                roles.append(self.bot.get_guild(a).get_role(role_id))
 
     @commands.cooldown(rate=1, per=60, type=commands.BucketType.user)
     @commands.has_permissions(manage_channels=True)
@@ -513,30 +487,29 @@ class Mod(commands.Cog, name="Moderator"):
         if result:
             return await send_embed(ctx, "Channel already locked.", negative=True)
 
-        roles = []
-
         for role in ctx.guild.roles:
             # No clue how this works, but it works
 
             if not role.permissions.manage_channels and not role.permissions.administrator:
-                await channel.set_permissions(role, send_messages=False)
 
                 if channel.overwrites_for(role).is_empty():
                     if role.permissions.send_messages:
-                        roles.append(role.id)
+                        await db.execute("Insert into Lock values (?, ?)", (channel.id, role.id))
+                        await db.commit()
 
                 else:
                     # I needed to check deny for first case, allow second. Realized way too late.
                     if role.permissions.send_messages:
                         if channel.overwrites_for(role).pair()[1].send_messages:  # = False
-                            roles.append(role.id)
+                            await db.execute("Insert into Lock values (?, ?)", (channel.id, role.id))
+                            await db.commit()
 
                     else:  # If they can't send messages guild wide, then perm needs to be allow
                         if channel.overwrites_for(role).pair()[0].send_messages:
-                            roles.append(role.id)
+                            await db.execute("Insert into Lock values (?, ?)", (channel.id, role.id))
+                            await db.commit()
 
-        await db.execute("Insert into Lock values (?, ?)", (channel.id, json.dumps(roles)))
-        await db.commit()
+                await channel.set_permissions(role, send_messages=False)
 
         await send_embed(ctx, "Channel locked.")
 
@@ -551,15 +524,13 @@ class Mod(commands.Cog, name="Moderator"):
         if not channel:
             channel = ctx.channel
 
-        cursor = await db.execute("Select ChannelID, Roles from Lock where ChannelID = ?", (channel.id,))
-        result = await cursor.fetchone()
+        cursor = await db.execute("Select RoleID from Lock where ChannelID = ?", (channel.id,))
+        result = await cursor.fetchall()
 
         if not result:
             return await send_embed(ctx, "Channel is not on lockdown.", negative=True)
 
-        roles = json.loads(result[1])
-
-        for id in roles:
+        for id in (i[0] for i in result):
             try:
                 await channel.set_permissions(ctx.guild.get_role(id), send_messages=True)
             except:
@@ -579,42 +550,35 @@ class Mod(commands.Cog, name="Moderator"):
     async def lockall(self, ctx):
         """Locks down all channels for members without manage_channels permissions."""
 
+        statement = """If (Select count(*) from Lock where ChannelID = ?) == 0 
+                       Begin 
+                        Insert into Lock values (?, ?) 
+                       End"""
+
         for channel in ctx.guild.text_channels:
-            roles = []
 
             for role in ctx.guild.roles:
 
                 if not role.permissions.manage_channels and not role.permissions.administrator:
-                    await channel.set_permissions(role, send_messages=False)
 
                     if channel.overwrites_for(role).is_empty():
                         if role.permissions.send_messages:
-                            roles.append(role.id)
+                            await db.execute(statement, (channel.id, channel.id, role.id))
+                            await db.commit()
 
                     else:
                         # I needed to check deny for first case, allow second. Realized way too late.
                         if role.permissions.send_messages:
                             if channel.overwrites_for(role).pair()[1].send_messages:  # = False
-                                roles.append(role.id)
+                                await db.execute(statement, (channel.id, channel.id, role.id))
+                                await db.commit()
 
                         else:  # If they can't send messages guild wide, then perm needs to be allow
                             if channel.overwrites_for(role).pair()[0].send_messages:
-                                roles.append(role.id)
+                                await db.execute(statement, (channel.id, channel.id, role.id))
+                                await db.commit()
 
-            roles = json.dumps(roles)
-
-            cursor = await db.execute("select ChannelID from Lock where ChannelID = ?", (channel.id,))
-            result = await cursor.fetchone()
-
-            if result:
-                await db.execute("update Lock "
-                                 "set Roles = ? "
-                                 "where ChannelID = ?", (roles, channel.id))
-                await db.commit()
-
-            else:
-                await db.execute("insert into Lock values (?, ?)", (channel.id, roles))
-                await db.commit()
+                    await channel.set_permissions(role, send_messages=False)
 
         await send_embed(ctx, "Locked down the server.")
 
@@ -626,22 +590,26 @@ class Mod(commands.Cog, name="Moderator"):
     async def unlockall(self, ctx):
         """Unlock all channels."""
 
+        islocked = False
+
         for channel in ctx.guild.text_channels:
-            cursor = await db.execute("Select Roles from Lock where ChannelID = ?", (channel.id,))
-            result = await cursor.fetchone()
+            cursor = await db.execute("Select Role from Lock where ChannelID = ?", (channel.id,))
+            result = await cursor.fetchall()
 
             if result:
-                roles = json.loads(result[0])
+                islocked = True
 
-                for id in roles:
+                for role_id in result:
                     try:
-                        await channel.set_permissions(ctx.guild.get_role(id), send_messages=True)
+                        await channel.set_permissions(ctx.guild.get_role(role_id), send_messages=True)
                     except:
                         pass
 
             await db.execute("Delete from Lock where ChannelID = ?", (channel.id,))
             await db.commit()
 
+        if not islocked:
+            return await send_embed(ctx, "No channels are locked.", negative=True)
         await send_embed(ctx, "Unlocked the server.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -655,18 +623,13 @@ class Mod(commands.Cog, name="Moderator"):
         if await insufficient_permissions(ctx, member):
             return
 
-        try:
-            await ctx.guild.ban(member, reason=reason, delete_message_days=7)
-            await ctx.guild.unban(member, reason=reason)
+        await ctx.guild.ban(member, reason=reason, delete_message_days=7)
+        await ctx.guild.unban(member, reason=reason)
 
-            infractions = await get_infractions(ctx, member, db)
-            infractions.append(["Softban", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-            await write_infractions(ctx, member.id, db, json.dumps(infractions))
+        await write_infractions(ctx, member, "Softban", reason=reason)
 
-            await send_embed(ctx, "Member softbanned.")
+        await send_embed(ctx, "Member softbanned.")
 
-        except Exception as e:
-            await send_embed(ctx, str(e), negative=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
@@ -678,61 +641,6 @@ class Mod(commands.Cog, name="Moderator"):
         if await insufficient_permissions(ctx, member):
             return
 
-        infractions = await get_infractions(ctx, member, db)
-        infractions.append(["Warn", reason, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), ctx.author.id])
-        await write_infractions(ctx, member.id, db, json.dumps(infractions))
+        await write_infractions(ctx, member, "Warn", reason=reason)
 
         await send_embed(ctx, f"Warned {member.mention}.")
-
-    @commands.cooldown(rate=1, per=30, type=commands.BucketType.user)
-    @commands.has_permissions(administrator=True)
-    @commands.command(aliases=["infractions"])
-    @commands.guild_only()
-    async def modlogs(self, ctx, member: discord.Member):
-        """Show the modlogs for a member."""
-
-        infractions = await get_infractions(ctx, member, db)
-
-        if not infractions:
-            return await send_embed(ctx, f"Did not find any modlogs for {member.mention}.", negative=True)
-
-        embed = discord.Embed(color=discord.Colour.blue())
-        embed.set_author(name=str(member), icon_url=str(member.avatar_url))
-
-        for infraction in infractions:
-            moderator = self.bot.get_user(infraction[3]) or await self.bot.fetch_member(infraction[3])
-
-            if infraction[0].lower() in ["warn", "kick", "softban", "unban", "unmute"]:
-
-                embed.add_field(name=f"Case {infractions.index(infraction) + 1}",
-                                value=f"**Type:** {infraction[0]}\n"
-                                      f"**User:** ({member.id}) {str(member)}\n"
-                                      f"**Moderator:** {str(moderator)}\n"
-                                      f"**Reason:** {infraction[1]}\n"
-                                      f"**Timestamp:** {infraction[2]}", inline=False)
-
-            else:
-
-                if infraction[4] == -1:
-                    infraction[4] = "Forever"
-
-                else:
-                    days, remainder = divmod(infraction[4], 1440)
-                    hours, minutes = divmod(remainder, 60)
-
-                    if days == 0:
-                        infraction[4] = f"{hours}h {minutes}m"
-                    else:
-                        infraction[4] = f"{days}d {hours}h {minutes}m"
-
-                embed.add_field(name=f"Case {infractions.index(infraction) + 1}",
-                                value=f"**Type:** {infraction[0]}\n"
-                                      f"**User:** ({member.id}) {str(member)}\n"
-                                      f"**Moderator:** {str(moderator)}\n"
-                                      f"**Reason:** {infraction[1]}\n"
-                                      f"**Timestamp:** {infraction[2]}\n"
-                                      f"**Time:** {infraction[4]}", inline=False)
-
-        await ctx.send(embed=embed)
-
-

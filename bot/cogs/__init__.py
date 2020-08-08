@@ -4,6 +4,7 @@ from .events import Events
 from .giveaway import Giveaway
 from .guildsetup import Guild_Setup
 from .help import HelpCommand
+from .infractions import Infractions
 from .info import Info
 from .logging import Logging
 from .misc import Misc
@@ -27,6 +28,7 @@ def setup(bot):
     bot.add_cog(Giveaway(bot))
     bot.add_cog(Guild_Setup(bot))
     bot.add_cog(HelpCommand(bot))
+    bot.add_cog(Infractions(bot))
     bot.add_cog(Info(bot))
     bot.add_cog(Logging(bot))
     bot.add_cog(Misc(bot))

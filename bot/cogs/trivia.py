@@ -86,6 +86,16 @@ class Trivia(commands.Cog, name="Trivia"):
         try:
             q = await self.trivia.get_specific_question(type=type, difficulty=difficulty, category=category)
             q = q[0]
+        except aiotrivia.ResponseError as e:
+            if typeR and catR and diffR:
+                while True:
+                    try:
+                        q = await self.trivia.get_random_question(difficulty=random.choice(("easy", "medium", "hard")))
+                        break
+                    except aiotrivia.ResponseError:
+                        continue
+            else:
+                return await send_embed(ctx, str(e), negative=True)
         except aiotrivia.AiotriviaException as e:
             return await send_embed(ctx, str(e), negative=True)
 
@@ -128,7 +138,7 @@ class Trivia(commands.Cog, name="Trivia"):
 
         try:
             msg = await self.bot.wait_for("message", check=lambda msg: msg.channel == ctx.channel
-                                                                       and msg.author == ctx.author, timeout=120.0)
+                                          and msg.author == ctx.author, timeout=120.0)
         except asyncio.TimeoutError:
             return await send_embed(ctx, f"Correct answer was **{answer}**", negative=True)
 

@@ -7,20 +7,21 @@ from discord.ext import commands
 
 
 async def is_logging(GuildID: int, column: str, db, ChannelID: int = None):
-    cursor = await db.execute(f"Select {column} from Logging where GuildID = ?", (GuildID,))
+    cursor = await db.execute(f"Select {column}, Enabled from Logging where GuildID = ? ", (GuildID,))
     result = await cursor.fetchone()
 
     if not result:
         return False
 
-    cursor = await db.execute("Select IgnoredChannelID, Enabled from Logging where GuildID = ?", (GuildID,))
-    result = await cursor.fetchone()
-
-    if not result[1]:
+    if not result[0] or not result[1]:
         return False
 
     if ChannelID:
-        return not (ChannelID in json.loads(result[0]))
+        cursor = await db.execute("Select IgnoredChannelID from LoggingIgnoredChannels where GuildID = ?", (GuildID,))
+        result = await cursor.fetchall()
+
+        ignoredchannels = [i[1] for i in result]
+        return not (ChannelID in ignoredchannels)
 
     return True
 
@@ -63,7 +64,7 @@ class Events(commands.Cog):
                         dict = json.load(f)
                         roleID = dict[str(member.guild.id)]
                         await member.edit(roles=[member.guild.get_role(roleID)])
-                    except: # Role deleted, no permission, etc.
+                    except:  # Role deleted, no permission, etc.
                         pass
 
         cursor = await db.execute("Select JoinMessage, JoinMessageChannel from JLMessage where GuildID = ?",

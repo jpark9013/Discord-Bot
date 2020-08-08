@@ -111,20 +111,10 @@ class Misc(commands.Cog):
     async def ping(self, ctx):
         """Returns your ping."""
 
-        cursor = await db.execute("Select PingList from Ping where MemberID = ?", (ctx.author.id,))
-        result = await cursor.fetchone()
-
         ping = self.bot.latency * 1000
 
-        if not result:
-            await db.execute("Insert into Ping values (?, ?)", (ctx.author.id, json.dumps([ping])))
-            await db.commit()
-
-        else:
-            result = json.loads(result[0])
-            result.append(ping)
-            await db.execute("Update Ping set Pinglist = ? where MemberID = ?",
-                             (json.dumps(result), ctx.author.id))
+        await db.execute("Insert into Ping values (?, ?)", (ctx.author.id, ping))
+        await db.commit()
 
         await send_embed(ctx, f"Your ping is **{round(ping)} ms**", info=True)
 
@@ -133,28 +123,29 @@ class Misc(commands.Cog):
     async def average(self, ctx):
         """Returns your average ping."""
 
-        cursor = await db.execute("Select PingList from Ping where MemberID = ?", (ctx.author.id,))
-        result = await cursor.fetchone()
+        cursor = await db.execute("Select Value from Ping where MemberID = ?", (ctx.author.id,))
+        result = await cursor.fetchall()
 
         if not result:
             return await send_embed(ctx, "You do not have any pings sent yet.", negative=True)
 
-        await send_embed(ctx, f"Your average ping is **{round(statistics.mean(json.loads(result[0])))}** ms.",
-                         info=True)
+        result = [i[0] for i in result]
+
+        await send_embed(ctx, f"Your average ping is **{round(statistics.mean(result))}** ms.", info=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @ping.command()
     async def history(self, ctx):
         """Returns your ping history."""
 
-        cursor = await db.execute("Select PingList from Ping where MemberID = ?", (ctx.author.id,))
+        cursor = await db.execute("Select Value from Ping where MemberID = ?", (ctx.author.id,))
         result = await cursor.fetchone()
 
         if not result:
             return await send_embed(ctx, "You do not have any pings sent yet.", negative=True)
 
         embeds = []
-        result = json.loads(result[0])
+        result = [i[0] for i in result]
         resultstr = []
         for i, v in enumerate(reversed(result), start=1):
             resultstr.append(f"{i}. {round(v)} ms")

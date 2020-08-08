@@ -29,9 +29,9 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         result = await cursor.fetchone()
 
         if not result[0]:
-            await db.execute("Insert into Logging values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
+            await db.execute("Insert into Logging values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
                              "?, ?, ?, ?, ?)",
-                             (guild.id, None, json.dumps([]), False, False, False, False, False, False, False, False,
+                             (guild.id, None, False, False, False, False, False, False, False, False,
                               False, False, False, False, False, False, False, False, False, False, False, False,
                               False, False))
             await db.commit()
@@ -70,21 +70,20 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     async def blacklist(self, ctx):
         """Get a list of all blacklisted channels and words."""
 
-        cursor = await db.execute("Select Channels, Words from Blacklist where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchone()
+        cursor = await db.execute("Select ChannelID, Word from Blacklist where GuildID = ?", (ctx.guild.id,))
+        result = await cursor.fetchall()
 
         if not result:
             return await send_embed(ctx, "No blacklisted channels or words.", negative=True)
 
-        if json.loads(result[0]):
-            channels = ", ".join(f"<#{id}>" for id in json.loads(result[0]))
-        else:
-            channels = "None!"
+        channels = ", ".join(f"<#{id}>" for id in [i[0] for i in result])
 
-        if json.loads(result[1]):
-            words = ", ".join(f"||{word}||" for word in json.loads(result[1]))
-        else:
-            words = "None!"
+        words = ", ".join(f"||{word}||" for word in [i[1] for i in result])
+
+        if not channels:
+            channels = "None"
+        elif not words:
+            words = "None"
 
         embed = discord.Embed(
             colour=discord.Colour.blue(),
@@ -105,27 +104,19 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         """Blacklist or unblacklist a channel based on its id or mention. Type 'all' at the end to blacklist all
         channels besides the current one. By the way this command will break very often because of SQL glitches."""
 
-        cursor = await db.execute("Select Channels from Blacklist where GuildID = ?", (ctx.guild.id,))
+        cursor = await db.execute("Select count(ChannelID) from Blacklist where GuildID = ? and ChannelID = ?",
+                                  (ctx.guild.id, channel.id))
         result = await cursor.fetchone()
 
-        message = "Blacklisted channel."
+        if not result[0]:
+            message = "Blacklisted channel."
 
-        if not result:
-            await db.execute("Insert into Blacklist values (?, ?, ?)",
-                             (ctx.guild.id, json.dumps([channel.id]), json.dumps([])))
-            await db.commit()
+            await db.execute("Insert into Blacklist values (?, ?, ?)", (ctx.guild.id, channel.id, None))
 
         else:
-            result = json.loads(result[0])
+            message = "Unblacklisted channel."
 
-            if channel.id in result:
-                result.remove(channel.id)
-                message = "Unblacklisted channel."
-            else:
-                result.append(channel.id)
-
-            await db.execute("Update Blacklist set Channels = ? where GuildID = ?",
-                             (json.dumps(result), ctx.guild.id))
+            await db.execute("Delete from Blacklist where ChannelID = ? and GuildID = ?", (channel.id, ctx.guild.id))
             await db.commit()
 
         await send_embed(ctx, message)
@@ -137,29 +128,23 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     async def total(self, ctx):
         """Blacklist all channels besides the current one."""
 
-        cursor = await db.execute("Select Channels from Blacklist where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchone()
+        cursor = await db.execute("Select ChannelID from Blacklist where GuildID = ?", (ctx.guild.id,))
+        result = await cursor.fetchall()
+
+        result = [i[0] for i in result]
 
         message = "Blacklisted all channels."
 
-        if not result:
-            await db.execute("Insert into Blacklist values (?, ?, ?)",
-                             (ctx.guild.id, json.dumps([i.id for i in ctx.guild.text_channels if i != ctx.channel]),
-                              json.dumps([])))
-            await db.commit()
+        if result != [i.id for i in ctx.guild.text_channels]:
+            for id in (i.id for i in ctx.guild.text_channels):
+                await db.execute("Insert or replace into Blacklist values (?, ?, ?)", (ctx.guild.id, id, None))
+                await db.commit()
 
         else:
-            result = json.loads(result[0])
-            if result == [i.id for i in ctx.guild.text_channels if i != ctx.channel]:
-                await db.execute("Update Blacklist values set Channels = ? where GuildID = ?",
-                                 (json.dumps([]), ctx.guild.id))
-                await db.commit()
-                message = "Unblacklisted all channels."
-            else:
-                await db.execute("Update Blacklist set Channels = ? where GuildID = ?",
-                                 (json.dumps([i.id for i in ctx.guild.text_channels if i != ctx.channel]),
-                                  ctx.guild.id))
-                await db.commit()
+            message = "Unblacklisted all channels."
+
+            await db.execute("Delete from Blacklist where GuildID = ?", (ctx.guild.id,))
+            await db.commit()
 
         await send_embed(ctx, message)
 
@@ -172,7 +157,8 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         """Blacklist a word. Summon this command again with the same argument to unblacklist a word. You can also put
         spoilers around the word, and the bot will try to remove them when adding them to the blacklist."""
 
-        cursor = await db.execute("Select Words from Blacklist where GuildID = ?", (ctx.guild.id,))
+        cursor = await db.execute("Select count(Word) from Blacklist where GuildID = ? and Word = ?",
+                                  (ctx.guild.id, word))
         result = await cursor.fetchone()
 
         if word[0] == "|" and word[1] == "|" and word[-1] == "|" and word[-2] == "|":
@@ -180,21 +166,15 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
 
         message = f"||``{word}``|| added to blacklist."
 
-        if not result:
+        if not result[0]:
             await db.execute("Insert into Blacklist values (?, ?, ?)",
-                             (ctx.guild.id, json.dumps([]), json.dumps([word])))
+                             (ctx.guild.id, None, word))
             await db.commit()
 
         else:
-            result = json.loads(result[0])
+            message = f"||``{word}``|| removed from blacklist."
 
-            if word in result:
-                result.remove(word)
-                message = f"||``{word}``|| removed from blacklist."
-            else:
-                result.append(word)
-
-            await db.execute("Update Blacklist set Words = ? where GuildID = ?", (json.dumps(result), ctx.guild.id))
+            await db.execute("Delete from Blacklist where GuildID = ? and Word = ?", (ctx.guild.id, word))
             await db.commit()
 
         await send_embed(ctx, message)

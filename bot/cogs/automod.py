@@ -13,9 +13,11 @@ async def sql_write(ctx, column, string):
 
     if result == ():
         await db.execute("Insert into AutoMod values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                         (ctx.guild.id, False, False, False, False, False, False, False, False, json.dumps([])))
+                         (ctx.guild.id, False, False, False, False, False, False, False, False))
         await db.commit()
-        return await db.execute(f"Set {column} = ? where GuildID = ?", (True, ctx.guild.id))
+        await db.execute(f"Set {column} = ? where GuildID = ?", (True, ctx.guild.id))
+        await db.commit()
+        return await send_embed(ctx, f"Turned on detection for {string}.")
 
     if result[0]:
         await db.execute(f"Update AutoMod set {column} = ? where GuildID = ?", (False, ctx.guild.id))
@@ -47,8 +49,8 @@ class AutoMod(commands.Cog, name="AutoMod"):
         result = await cursor.fetchone()
 
         if not result:
-            await db.execute("Insert into AutoMod values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                             (ctx.guild.id, False, False, False, False, False, False, False, False, json.dumps([])))
+            await db.execute("Insert into AutoMod values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                             (ctx.guild.id, False, False, False, False, False, False, False, False))
             await db.commit()
             result = (False, False, False, False, False, False, False, False)
 
@@ -77,6 +79,33 @@ class AutoMod(commands.Cog, name="AutoMod"):
         embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
 
         await ctx.send(embed=embed)
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @automod.command()
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def ignore(self, ctx, channel: discord.TextChannel = None):
+        """Ignore a text channel for automod, or unignore it.."""
+
+        if not channel:
+            channel = ctx.channel
+
+        cursor = await db.execute("Select count(ChannelID) from AutoModIgnoredChannels where GuildID = ?",
+                                  (ctx.guild.id,))
+        result = await cursor.fetchone()
+
+        if not result[0]:
+            await db.execute("Insert into AutoModIgnoredChannels values (?, ?)", (ctx.guild.id, channel.id,))
+            await db.commit()
+
+            await send_embed(ctx, "Ignored channel for automod.")
+
+        else:
+            await db.execute("Delete from AutoModIgnoredChannels where ChannelID = ? and GuildID = ?",
+                             (channel.id, ctx.guild.id))
+            await db.commit()
+
+            await send_embed(ctx, "Unignored channel for automod.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @automod.command()

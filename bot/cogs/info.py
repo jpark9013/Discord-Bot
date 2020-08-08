@@ -169,20 +169,21 @@ class Info(commands.Cog, name="Info"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command()
     @commands.guild_only()
-    async def timeplaying(self, ctx, member: discord.Member):
+    async def timeplaying(self, ctx, member: discord.Member = None):
         """Get time played on various activities on a member."""
 
-        cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
-        result = await cursor.fetchone()
+        if not member:
+            member = ctx.author
 
-        if not result or not result[0]:
-            return await send_embed(ctx, "Could not find any activities for the member in the DB.", negative=True)
+        cursor = await db.execute("Select Thing, Time from Activity where MemberID = ?", (member.id,))
+        result = await cursor.fetchall()
+
+        if not result:
+            return await send_embed(ctx, "Bot has not logged any activities for the given member.")
 
         descriptions = []
 
-        dict = json.loads(result[0])
-
-        for i, v in dict.items():
+        for i, v in result:
             v /= 2
             d, remainder = divmod(v, 86400)
             h, remainder = divmod(remainder, 3600)
@@ -192,7 +193,7 @@ class Info(commands.Cog, name="Info"):
                                 f"Time played: {int(d)}d {int(h)}h {int(m)}m {int(s)}s\n"
                                 f"")
 
-        total = sum(dict.values()) / 2
+        total = sum([i[1] for i in result]) / 2
 
         descs = []
         embeds = []
@@ -218,37 +219,20 @@ class Info(commands.Cog, name="Info"):
     async def time_playing(self):
 
         for member in self.bot.get_all_members():
-
             if not member.bot:
-                cursor = await db.execute("Select Activities from Activity where MemberID = ?", (member.id,))
-                result = await cursor.fetchone()
-
-                dict = {}
-                indb = False
-
-                isactivity = False
-
                 for activity in member.activities:
-                    isactivity = True
-                    if not result:
-                        dict[activity.name] = 30
-                    else:
-                        indb = True
-                        dict = json.loads(result[0])
-                        try:
-                            dict[activity.name] += 30
-                        except KeyError:
-                            dict[activity.name] = 30
+                    cursor = await db.execute("Select count(Time) from Activity where MemberID = ? and Thing = ?",
+                                              (member.id, activity.name))
+                    result = await cursor.fetchone()
 
-                if isactivity:
                     try:
-                        if not indb:
-                            await db.execute("Insert into Activity values(?, ?)", (member.id, json.dumps(dict)))
+                        if not result[0]:
+                            await db.execute("Insert into Activity values (?, ?, ?)", (member.id, activity.name, 30))
                             await db.commit()
 
                         else:
-                            await db.execute("Update Activity set Activities = ? where MemberID = ?", (json.dumps(dict),
-                                                                                                       member.id))
+                            await db.execute("Update Activity set Time = Time + 30 where MemberID = ? and Thing = ?",
+                                             (member.id, activity.name))
                             await db.commit()
 
                     except sqlite3.OperationalError:
