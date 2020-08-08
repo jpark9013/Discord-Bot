@@ -187,6 +187,15 @@ class HumphreyGaming(commands.AutoShardedBot):
         if ctx.author.id in blacklist["members"]:
             return
 
+        cursor = await self.db.execute("Select Message from AutoRespond where GuildID = ? and Trigger = ?",
+                                       (ctx.guild.id, message.content))
+        result = await cursor.fetchone()
+
+        if result:
+            if result[0] == "671511741266260530238793660166214588641633317276965513448948591":
+                return
+            return await ctx.send(result[0])
+
         await self.process_commands(message)
 
     async def on_command(self, ctx):

@@ -558,3 +558,27 @@ class Owner(commands.Cog, name="Owner"):
 
         await channel.send(embed=to_embed(string, type))
         await send_embed(ctx, "Sent embed.")
+
+    @commands.command(aliases=["ec"])
+    @commands.is_owner()
+    async def executecommand(self, ctx, guildID: int, channelID: int, command: str, *args):
+        """Execute a command in another server. Put quotes around the desired command."""
+
+        try:
+            channel = self.bot.get_guild(guildID).get_channel(channelID)
+        except AttributeError:
+            channel = self.bot.get_channel(channelID)
+
+        msg = None
+
+        async for message in channel.history(limit=1):
+            msg = message
+
+        if not msg:
+            return await send_embed(ctx, "No message in this channel, so the bot cannot get the context. "
+                                         "Try a different channel.", negative=True)
+
+        context = await self.bot.get_context(msg)
+        cmd = self.bot.get_command(command)
+        await cmd(context, *args)
+        await send_embed(ctx, "Command executed.")

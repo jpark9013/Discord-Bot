@@ -535,7 +535,7 @@ class Events(commands.Cog):
             if await is_showicon(invite.guild.id, db):
                 embed.set_thumbnail(url=str(invite.guild.icon_url))
 
-            embed.set_author(name=invite.guild.name, icon_url=str(invite.guild.avatar_url))
+            embed.set_author(name=invite.guild.name, icon_url=str(invite.guild.icon_url))
 
             if invite.max_age == 0:
                 age = "Forever"

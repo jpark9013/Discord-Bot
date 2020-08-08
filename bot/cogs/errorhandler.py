@@ -23,13 +23,6 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, commands.MissingRequiredArgument) or isinstance(error, commands.BadArgument) \
                 or isinstance(error, commands.TooManyArguments):
 
-            OWNER_COG_NAMES = ["Jishaku", "Owner", "SpreadSheets"]
-            OWNER_COMMAND_NAMES = [i.qualified_name for i in self.bot.walk_commands() if i.cog and i.cog.qualified_name
-                                   in OWNER_COG_NAMES]
-
-            if ctx.command.qualified_name in OWNER_COMMAND_NAMES:
-                return
-
             await ctx.invoke(self.bot.get_command("help"), name=ctx.command.qualified_name)
 
         elif isinstance(error, commands.MissingPermissions):

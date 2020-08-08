@@ -203,7 +203,7 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def joinmessage(self, ctx, *, message=None):
+    async def joinmessage(self, ctx, *, message):
         """Set a join message. You must also set the channel in order for join messages to be sent."""
 
         cursor = await db.execute("Select count(*) from JLMessage where GuildID = ?", (ctx.guild.id,))
@@ -245,7 +245,7 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     @commands.group()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def leavemessage(self, ctx, *, message=None):
+    async def leavemessage(self, ctx, *, message):
         """Set leave message. You must also set the channel in order for leave messages to be sent."""
 
         cursor = await db.execute("Select count(*) from JLMessage where GuildID = ?", (ctx.guild.id,))
@@ -413,3 +413,112 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
 
         await emoji.delete(reason=reason)
         await send_embed(ctx, "Deleted emoji.")
+
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    @commands.group(aliases=["ar"])
+    async def autorespond(self, ctx):
+        """Base autorespond command."""
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    @autorespond.command(aliases=["add"])
+    async def create(self, ctx, trigger: str, *, message: str = None):
+        """Create an autorespond for a certain trigger. The trigger MUST BE IN QUOTES, otherwise the bot will only catch
+         the first word of it. Lastly, this serves as a workaround to disable certain commands, but for everyone, if the
+          response is none."""
+
+        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ?", (ctx.guild.id,))
+        result = await cursor.fetchone()
+
+        if result[0] >= 100:
+            return await send_embed(ctx, "Your server has the max autorespond messages of 100.", negative=True)
+
+        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
+                                  (ctx.guild.id, trigger))
+        result = await cursor.fetchone()
+
+        if result[0]:
+            return await send_embed(ctx, "Your server already has this autorespond trigger.", negative=True)
+
+        if not message:
+            message = "671511741266260530238793660166214588641633317276965513448948591"
+
+        await db.execute("Insert into AutoRespond values (?, ?, ?)", (ctx.guild.id, trigger, message))
+        await db.commit()
+
+        await send_embed(ctx, "Created AutoRespond trigger.")
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    @autorespond.command(aliases=["remove"])
+    async def delete(self, ctx, *, trigger: str):
+        """Delete a trigger for AutoRespond."""
+
+        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
+                                  (ctx.guild.id, trigger))
+        result = await cursor.fetchone()
+
+        if not result[0]:
+            return await send_embed(ctx, "No matching trigger found for this server.", negative=True)
+
+        await db.execute("Delete from AutoRespond where GuildID = ? and Trigger = ?",
+                         (ctx.guild.id, trigger))
+        await db.commit()
+
+        await send_embed(ctx, "Deleted AutoRespond trigger.")
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    @autorespond.command()
+    async def edit(self, ctx, trigger: str, *, message: str = None):
+        """Edit an AutoRespond trigger."""
+
+        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
+                                  (ctx.guild.id, trigger))
+        result = await cursor.fetchone()
+
+        if not result[0]:
+            return await send_embed(ctx, "Specified trigger does not exist.", negative=True)
+
+        if not message:
+            message = "671511741266260530238793660166214588641633317276965513448948591"
+
+        await db.execute("Update AutoRespond set Message = ? where GuildID = ? and Trigger = ?",
+                         (message, ctx.guild.id, trigger))
+        await db.commit()
+
+        await send_embed(ctx, "Edited AutoRespond trigger.")
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    @autorespond.command(aliases=["all"])
+    async def list(self, ctx):
+        """Lists all AutoRespond triggers for this server."""
+
+        cursor = await db.execute("Select Trigger from AutoRespond where GuildID = ?", (ctx.guild.id,))
+        result = await cursor.fetchall()
+
+        if not result:
+            return await send_embed(ctx, "No AutoRespond triggers on this server.", negative=True)
+
+        embeds = []
+        desc = []
+
+        for i, v in enumerate(result, start=1):
+            v = v[0]
+            desc.append(f"{i}. ``{v}``")
+            if i == len(result) or i % 10 == 0:
+                embed = discord.Embed(
+                    colour=discord.Colour.blue(),
+                    title=f"AutoRespond triggers for {ctx.guild.name}",
+                    description="\n".join(desc)
+                )
+
+                embeds.append(embed)
+
+        await self.bot.paginate(ctx, embeds)
