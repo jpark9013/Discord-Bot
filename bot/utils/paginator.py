@@ -133,7 +133,10 @@ class Paginator:
         return False
 
     async def paginate(self):
-        perms = self.ctx.me.guild_permissions.manage_messages
+        try:
+            perms = self.ctx.me.guild_permissions.manage_messages
+        except AttributeError:
+            perms = True
         await self.setup()
         while self.paginating:
             if perms:
