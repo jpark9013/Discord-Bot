@@ -23,7 +23,7 @@ from .support import Support
 
 def setup(bot):
     bot.add_cog(AutoMod(bot))
-    bot.add_cog(ErrorHandler(bot))
+    # bot.add_cog(ErrorHandler(bot))
     bot.add_cog(Events(bot))
     bot.add_cog(Giveaway(bot))
     bot.add_cog(Guild_Setup(bot))

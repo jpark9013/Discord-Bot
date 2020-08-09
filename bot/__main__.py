@@ -58,6 +58,9 @@ class HumphreyGaming(commands.AutoShardedBot):
         with open("prefixes.json", "r") as f:
             self.prefixes = json.load(f)
 
+        with open("blacklist.json", "r") as f:
+            self.blacklist = json.load(f)
+
     async def con(self):
         self.db = await aiosqlite3.connect("DiscordServers.db")
 
@@ -105,11 +108,14 @@ class HumphreyGaming(commands.AutoShardedBot):
     async def on_message(self, message):
         ctx = await self.get_context(message)
 
-        with open("blacklist.json") as f:
-            blacklist = json.load(f)
         if ctx.author.bot or not self.is_ready() or not self.can_send(message) or \
-                (ctx.guild and ctx.guild.id in blacklist["guilds"]):
+                (ctx.guild and ctx.guild.id in self.blacklist["guilds"]):
             return
+
+        if not ctx.guild:
+            if ctx.author.id in self.blacklist["members"]:
+                return
+            return await self.process_commands(message)
 
         cursor = await self.db.execute("Select * from AutoMod where GuildID = ?", (ctx.guild.id,))
         result = await cursor.fetchone()
@@ -199,7 +205,7 @@ class HumphreyGaming(commands.AutoShardedBot):
             if channel_id == ctx.channel.id or word.lower() in content:
                 return await message.delete()
 
-        if ctx.author.id in blacklist["members"]:
+        if ctx.author.id in self.blacklist["members"]:
             return
 
         cursor = await self.db.execute("Select Message from AutoRespond where GuildID = ? and Trigger = ?",

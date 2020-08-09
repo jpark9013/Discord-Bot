@@ -33,6 +33,8 @@ class ErrorHandler(commands.Cog):
             await send_embed(ctx, str(error), negative=True)
         elif isinstance(error, commands.NotOwner):
             return
+        elif isinstance(error, commands.CheckFailure):
+            await send_embed(ctx, str(error), negative=True)
         else:
             await send_embed(ctx, str(error), negative=True)
             channel = self.bot.get_guild(721194829366951997).get_channel(735309492757069896)
@@ -45,7 +47,11 @@ class ErrorHandler(commands.Cog):
                 colour=discord.Colour.red()
             )
             embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
-            embed.set_footer(text=f"Command/Content: {ctx.message.content} • Guild: {ctx.guild.name} "
-                                  f"(ID {ctx.guild.id}) • Channel: {ctx.channel.name} (ID {ctx.channel.id})")
+            if ctx.guild:
+                print(ctx.guild)
+                embed.set_footer(text=f"Command/Content: {ctx.message.content} • Guild: {ctx.guild.name} "
+                                      f"(ID {ctx.guild.id}) • Channel: {ctx.channel.name} (ID {ctx.channel.id})")
+            else:
+                embed.set_footer(text=f"Command/Content: {ctx.message.content} • Channel: DMChannel")
 
             await channel.send(embed=embed)

@@ -18,9 +18,12 @@ class HelpCommand(commands.Cog, name="Help"):
     async def help(self, ctx, *, name: str = None):
         """Get help on categories."""
 
-        with open("prefixes.json", "r") as f:
-            d = json.load(f)
-            prefix = d[str(ctx.guild.id)]
+        try:
+            prefix = self.bot.prefixes[str(ctx.guild.id)]
+        except KeyError:
+            prefix = "?"
+        except AttributeError:
+            prefix = "?"
 
         cogs = self.bot.cogs
 

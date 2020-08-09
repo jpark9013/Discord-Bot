@@ -50,7 +50,6 @@ class Events(commands.Cog):
         db = self.bot.db
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_member_join(self, member):
         # Mute Role check
         cursor = await db.execute("Select Timeunmuted from Timestamps where MemberID = ? and GuildID = ?",
@@ -123,7 +122,6 @@ class Events(commands.Cog):
                     return
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_member_remove(self, member):
         cursor = await db.execute("Select LeaveMessage, LeaveMessageChannel from JLMessage where GuildID = ?",
                                   (member.guild.id,))
@@ -162,7 +160,6 @@ class Events(commands.Cog):
             await send(self.bot, member.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_member_ban(self, guild, member):
         if await is_logging(guild.id, "MemberBanned", db):
             icon_url = str(member.avatar_url)
@@ -180,7 +177,6 @@ class Events(commands.Cog):
             await send(self.bot, guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_member_unban(self, guild, member):
         if await is_logging(guild.id, "MemberUnbanned", db):
             icon_url = str(member.avatar_url)
@@ -198,8 +194,10 @@ class Events(commands.Cog):
             await send(self.bot, guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_message_edit(self, before, after):
+        if not after.guild:
+            return
+
         if await is_logging(after.guild.id, "MessageEdited", db):
             if before.content != after.content:
                 embed = discord.Embed(
@@ -220,8 +218,10 @@ class Events(commands.Cog):
                 await send(self.bot, after.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_message_delete(self, message):
+        if not message.guild:
+            return
+
         if await is_logging(message.guild.id, "MessageEdited", db):
             embed = discord.Embed(
                 colour=discord.Colour.red(),
@@ -238,8 +238,10 @@ class Events(commands.Cog):
             await send(self.bot, message.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_bulk_message_delete(self, messages):
+        if not messages[0].guild:
+            return
+
         if await is_logging(messages[0].guild.id, "BulkMessageDeletion", db):
             embed = discord.Embed(
                 colour=discord.Colour.red(),
@@ -254,7 +256,6 @@ class Events(commands.Cog):
             await send(self.bot, messages[0].guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_guild_channel_create(self, channel):
         if await is_logging(channel.guild.id, "ChannelCreated", db):
             embed = discord.Embed(
@@ -271,7 +272,6 @@ class Events(commands.Cog):
             await send(self.bot, channel.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_guild_channel_delete(self, channel):
         if await is_logging(channel.guild.id, "ChannelDeleted", db):
             embed = discord.Embed(
@@ -287,7 +287,6 @@ class Events(commands.Cog):
             await send(self.bot, channel.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_guild_role_create(self, role):
         if await is_logging(role.guild.id, "RoleCreated", db):
             embed = discord.Embed(
@@ -304,7 +303,6 @@ class Events(commands.Cog):
             await send(self.bot, role.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_guild_role_delete(self, role):
         if await is_logging(role.guild.id, "RoleDeleted", db):
             embed = discord.Embed(
@@ -321,7 +319,6 @@ class Events(commands.Cog):
             await send(self.bot, role.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_guild_role_update(self, before, after):
         if await is_logging(after.guild.id, "RoleUpdated", db):
             embed = discord.Embed(
@@ -338,8 +335,8 @@ class Events(commands.Cog):
             await send(self.bot, after.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_member_update(self, before, after):
+
         if before.display_name != after.display_name and before.roles != after.roles:
             if await is_logging(after.guild.id, "RoleGiven", db) and await is_logging(after.guild.id, "RoleRemoved", db) \
                     and await is_logging(after.guild.id, "NicknameChanged", db):
@@ -419,8 +416,10 @@ class Events(commands.Cog):
                 await send(self.bot, after.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_command(self, ctx):
+        if not ctx.guild:
+            return
+
         if await is_logging(ctx.guild.id, "ModeratorCommandUsed", db):
             if ctx.command.cog.qualified_name == "Mod":
                 embed = discord.Embed(
@@ -438,7 +437,6 @@ class Events(commands.Cog):
                 await send(self.bot, ctx.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_voice_state_update(self, member, before, after):
         # Moved to VC
         if not before.channel and after.channel:
@@ -490,7 +488,6 @@ class Events(commands.Cog):
                 await send(self.bot, member.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_invite_create(self, invite):
         if await is_logging(invite.guild.id, "Invites", db):
             embed = discord.Embed(
@@ -525,7 +522,6 @@ class Events(commands.Cog):
             await send(self.bot, invite.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_invite_delete(self, invite):
         if await is_logging(invite.guild.id, "Invites", db):
             embed = discord.Embed(
@@ -560,7 +556,6 @@ class Events(commands.Cog):
             await send(self.bot, invite.guild.id, embed, db)
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_raw_reaction_add(self, payload):
         cursor = await db.execute("Select MessageID, RoleID, Reaction from RoleReact where MessageID = ?",
                                   (payload.message_id,))
@@ -591,7 +586,6 @@ class Events(commands.Cog):
             pass
 
     @commands.Cog.listener()
-    @commands.guild_only()
     async def on_raw_reaction_remove(self, payload):
         cursor = await db.execute("Select MessageID, RoleID, Reaction, DeleteOnRemove from RoleReact "
                                   "where MessageID = ?", (payload.message_id,))

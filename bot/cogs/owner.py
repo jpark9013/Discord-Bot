@@ -267,12 +267,13 @@ class Owner(commands.Cog, name="Owner"):
         if not guild:
             return await send_embed(ctx, "Invalid Guild ID", negative=True)
 
+        if guild.id in self.bot.blacklist["guilds"]:
+            return await send_embed(ctx, "Guild already blacklisted", negative=True)
+
         with open("blacklist.json", "r") as f:
             blacklist = json.load(f)
 
-        if guild.id in blacklist["guilds"]:
-            return await send_embed(ctx, "Guild already blacklisted", negative=True)
-
+        self.bot.blacklist["guilds"].append(guild.id)
         blacklist["guilds"].append(guild.id)
 
         with open("blacklist.json", "w") as f:
@@ -287,17 +288,19 @@ class Owner(commands.Cog, name="Owner"):
 
         if isinstance(member, int):
             try:
-                member = discord.Object(id=member)
+                member = self.bot.get_user(member) or await self.bot.fetch_user(member)
+                a = member.id
 
-            except:
+            except AttributeError:
                 return await send_embed(ctx, "Member ID does not exist.", negative=True)
+
+        if member.id in self.bot.blacklist["members"]:
+            return await send_embed(ctx, "Member already blacklisted", negative=True)
 
         with open("blacklist.json", "r") as f:
             blacklist = json.load(f)
 
-        if member.id in blacklist["members"]:
-            return await send_embed(ctx, "Member already blacklisted", negative=True)
-
+        self.bot.blacklist["members"].append(member.id)
         blacklist["members"].append(member.id)
 
         with open("blacklist.json", "w") as f:
