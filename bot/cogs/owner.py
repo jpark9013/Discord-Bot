@@ -89,9 +89,12 @@ class Owner(commands.Cog, name="Owner"):
 
     @commands.is_owner()
     @commands.command()
-    async def autostatus(self, ctx, *, status):
+    async def autostatus(self, ctx, space=True, *, status: str):
         """Autostatus the bot. Cycles through the provided name every second just like Aimware.net in CSGO. You might
         get rate limited if you put the number of seconds under 60."""
+
+        if space:
+            status += " "
 
         try:
             self.bot.x = 0

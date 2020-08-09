@@ -29,7 +29,9 @@ class HumphreyGaming(commands.AutoShardedBot):
             try:
                 return self.prefixes[str(message.guild.id)]
             except KeyError:
-                return ";"
+                return "?"
+            except AttributeError:
+                return "?"
 
         super().__init__(command_prefix=get_prefix, case_insensitive=True, help_command=None)
 

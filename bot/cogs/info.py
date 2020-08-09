@@ -94,7 +94,8 @@ class Info(commands.Cog, name="Info"):
 
         embed.add_field(name="Info", value=f"{uptime}\n"
                                            f"Currently in **{len(self.bot.guilds)}** servers\n"
-                                           f"Watching **{len(self.bot.users) - 1}** users\n", inline=False)
+                                           f"Watching **{len({i for i in self.bot.users if not i.bot})}** users\n",
+                        inline=False)
 
         embed.add_field(
             name="Invite",
