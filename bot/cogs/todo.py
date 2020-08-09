@@ -50,7 +50,7 @@ class Todo(commands.Cog, name="Todo"):
                          (ctx.author.id, string, ctx.author.id))
         await db.commit()
 
-        await send_embed(ctx, "Created new note.")
+        await send_embed(ctx, "Created new to-do.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @Todo.command(aliases=["remove"])

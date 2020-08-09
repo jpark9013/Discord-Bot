@@ -8,11 +8,11 @@ from datetime import datetime
 import aiohttp
 import aiosqlite3
 import discord
-# import youtube_dl
-
 from discord.ext import commands
-from bot.utils.format import to_embed
+
 from bot.utils.paginator import Paginator
+
+# import youtube_dl
 
 
 logging.basicConfig(level=logging.INFO)

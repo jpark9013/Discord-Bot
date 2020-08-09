@@ -163,10 +163,10 @@ class Misc(commands.Cog):
         if not member:
             return await send_embed(ctx, f"[Click me]"
                                          f"(https://discord.com/api/oauth2/authorize?client_id=718287109030543370"
-                                         f"&permissions=8&scope=bot)")
+                                         f"&permissions=8&scope=bot)", info=True)
 
         if not member.bot:
-            return
+            return await send_embed(ctx, "Invalid bot.", negative=True)
 
         await send_embed(ctx,
                          f"[Click Me](https://discord.com/oauth2/authorize?client_id={member.id}"
