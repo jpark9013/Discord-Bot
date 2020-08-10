@@ -12,6 +12,7 @@ from .mod import Mod
 from .music import Music
 from .notes import Notes
 from .owner import Owner
+from .polls import Polls
 from .protectedtags import ProtectedTags
 from .reminders import Reminders
 from .tags import Tags
@@ -37,6 +38,7 @@ def setup(bot):
     # bot.add_cog(Music(bot))
     bot.add_cog(Notes(bot))
     bot.add_cog(Owner(bot))
+    bot.add_cog(Polls(bot))
     bot.add_cog(ProtectedTags(bot))
     bot.add_cog(Reminders(bot))
     bot.add_cog(Tags(bot))

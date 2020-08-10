@@ -62,7 +62,7 @@ class HumphreyGaming(commands.AutoShardedBot):
             self.blacklist = json.load(f)
 
     async def con(self):
-        self.db = await aiosqlite3.connect("DiscordServers.db")
+        self.db = await aiosqlite3.connect("Servers.db")
 
     async def session(self):
         self.session = aiohttp.ClientSession()

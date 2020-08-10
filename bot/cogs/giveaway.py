@@ -107,6 +107,9 @@ class Giveaway(commands.Cog, name="Giveaway"):
     async def end(self, ctx, message: discord.Message):
         """End a giveaway. Give message ID as the parameter."""
 
+        if message.guild != ctx.guild:
+            return await send_embed(ctx, "You do not have permission to do that.", negative=True)
+
         embed = message.embeds[0]
         host = embed.description.split('\n')
         host = host[2]
@@ -176,6 +179,9 @@ class Giveaway(commands.Cog, name="Giveaway"):
     @commands.has_permissions(administrator=True)
     async def reroll(self, ctx, message: discord.Message):
         """Reroll a giveaway."""
+
+        if message.guild != ctx.guild:
+            return await send_embed(ctx, "You do not have permission to do that.", negative=True)
 
         cursor = await db.execute("Select Members, Ended from Giveaway where MessageID = ? and GuildID = ?",
                                   (message.id, ctx.guild.id))

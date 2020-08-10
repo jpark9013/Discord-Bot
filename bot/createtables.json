@@ -22,5 +22,6 @@
   "create table if not exists Activity(MemberID int not null, Thing text, Time int)",
   "create table if not exists Giveaway(MessageID int not null primary key, GuildID int, TimeEnding int, Members int, Ended bit, ChannelID int)",
   "create table if not exists TriviaTop(GuildID int not null, MemberID int not null, Correct float, Total float, Score float, primary key(GuildID, MemberID))",
-  "create table if not exists AutoRespond(GuildID int not null, Trigger text not null, Message text, primary key(GuildID, Trigger))"
+  "create table if not exists AutoRespond(GuildID int not null, Trigger text not null, Message text, primary key(GuildID, Trigger))",
+  "create table if not exists Polls(GuildID int not null, ChannelID int not null, MessageID int not null primary key, TopNumber int not null, TimeEnding int not null, Option1 text, Option2 text, Option3 text, Option4 text, Option5 text, Option6 text, Option7 text, Option8 text, Option9 text, Option10 text)"
 ]
