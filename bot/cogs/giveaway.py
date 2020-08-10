@@ -63,6 +63,7 @@ class Giveaway(commands.Cog, name="Giveaway"):
     @giveaway.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(add_reactions=True)
     async def create(self, ctx, channel: discord.TextChannel, minutes: float, members: int, *, prize: str):
         """Create a giveaway."""
 

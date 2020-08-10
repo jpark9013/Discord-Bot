@@ -29,13 +29,14 @@ class Polls(commands.Cog, name="Polls"):
         self.check_polls.start()
 
     @commands.group()
-    @commands.has_permissions(administrator=True)
     async def poll(self, ctx):
         """The base poll command. Doesn't do anything when invoked."""
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @poll.command(aliases=["add"])
     @commands.has_permissions(administrator=True)
+    @commands.bot_has_permissions(add_reactions=True)
+    @commands.guild_only()
     async def create(self, ctx, channel: typing.Optional[discord.TextChannel], minutes: float, title: str, *options):
         """Create a poll. Make the options space separated, with quotes if spaces within the options themselves, such as
         ``do thing 2`` are needed."""
@@ -76,6 +77,7 @@ class Polls(commands.Cog, name="Polls"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @poll.command(aliases=["stop"])
     @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     async def end(self, ctx, msg: discord.Message):
         """End a poll early. Give Message ID as the parameter."""
 
@@ -133,5 +135,5 @@ class Polls(commands.Cog, name="Polls"):
                 cmd = self.bot.get_command("poll end")
                 ctx = await self.bot.get_context(msg)
                 await cmd(ctx, msg)
-            except:
-                pass
+            except Exception as e:
+                print(e)
