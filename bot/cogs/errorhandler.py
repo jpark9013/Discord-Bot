@@ -48,7 +48,6 @@ class ErrorHandler(commands.Cog):
             )
             embed.set_author(name=str(ctx.author), icon_url=str(ctx.author.avatar_url))
             if ctx.guild:
-                print(ctx.guild)
                 embed.set_footer(text=f"Command/Content: {ctx.message.content} • Guild: {ctx.guild.name} "
                                       f"(ID {ctx.guild.id}) • Channel: {ctx.channel.name} (ID {ctx.channel.id})")
             else:

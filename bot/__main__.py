@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 
 import aiohttp
-import aiosqlite3
+import aiosqlite
 import discord
 from discord.ext import commands
 
@@ -15,7 +15,11 @@ from bot.utils.paginator import Paginator
 # import youtube_dl
 
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('discord')
+logger.setLevel(logging.WARNING)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 with open("token.txt", "r") as file:
     TOKEN = file.readline()
@@ -61,8 +65,11 @@ class HumphreyGaming(commands.AutoShardedBot):
         with open("blacklist.json", "r") as f:
             self.blacklist = json.load(f)
 
+        with open("muterole.json", "r") as f:
+            self.muteroles = json.load(f)
+
     async def con(self):
-        self.db = await aiosqlite3.connect("Servers.db")
+        self.db = await aiosqlite.connect("Servers.db")
 
     async def session(self):
         self.session = aiohttp.ClientSession()

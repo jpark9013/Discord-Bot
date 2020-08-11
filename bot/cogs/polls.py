@@ -95,14 +95,31 @@ class Polls(commands.Cog, name="Polls"):
 
         old_embed = msg.embeds[0]
 
-        reactions = [i.count for i in msg.reactions]
+        emojis = self.EMOJIS[:result[1]]
 
         options = [v for i, v in enumerate(result[2:12]) if i <= result[1]]
+        reactions = [i.count for i in msg.reactions if str(i) in emojis]
+
+        total = sum(reactions)
+        if total == 0:
+            await db.execute("Delete from Polls where MessageID = ?", (msg.id,))
+            await db.commit()
+
+            embed = discord.Embed(
+                colour=discord.Colour.red(),
+                title=f"Poll has ended (No Votes)\n"
+                      f"(Original title: {old_embed.title})",
+                description=old_embed.description
+            )
+            embed.set_footer(text=f"Ended at {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
+
+            return await send_embed(ctx, f"No votes for the poll with message ID {msg.id}.", negative=True)
+
         result_dict = {i + 1: reactions[i] for i in range(result[1])}
         result_dict = dict(sorted(result_dict.items(), key=operator.itemgetter(1), reverse=True))
 
         results = [f"``{options[i - 1]}`` with **{v}** votes "
-                   f"(original emoji of option was {self.EMOJIS[i - 1]})" for i, v in result_dict.items()]
+                   f"({round(v/total*100, 2)}% of the total)" for i, v in result_dict.items()]
 
         description = ["Results:"] + [f"{i}. {v}" for i, v in enumerate(results, start=1)]
 

@@ -89,7 +89,7 @@ class Owner(commands.Cog, name="Owner"):
 
     @commands.is_owner()
     @commands.command()
-    async def autostatus(self, ctx, space=True, *, status: str):
+    async def autostatus(self, ctx, space: typing.Optional[bool] = True, *, status: str):
         """Autostatus the bot. Cycles through the provided name every second just like Aimware.net in CSGO. You might
         get rate limited if you put the number of seconds under 60."""
 
@@ -567,7 +567,7 @@ class Owner(commands.Cog, name="Owner"):
 
     @commands.command(aliases=["ec"])
     @commands.is_owner()
-    async def executecommand(self, ctx, guildID: int, channelID: int, command: str, *args):
+    async def executecommand(self, ctx, guildID: typing.Optional[int], channelID: int, command: str, *args, **kwargs):
         """Execute a command in another server. Put quotes around the desired command."""
 
         try:
@@ -586,5 +586,5 @@ class Owner(commands.Cog, name="Owner"):
 
         context = await self.bot.get_context(msg)
         cmd = self.bot.get_command(command)
-        await cmd(context, *args)
+        await cmd(context, *args, **kwargs)
         await send_embed(ctx, "Command executed.")

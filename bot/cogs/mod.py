@@ -11,9 +11,8 @@ from discord.ext import commands, tasks
 from bot.utils.format import to_embed, send_embed
 
 
-async def no_mute_role(ctx):
-    with open("muterole.json", "r") as f:
-        dict = json.load(f)
+async def no_mute_role(ctx, bot):
+    dict = bot.muteroles
     if str(ctx.guild.id) not in dict.keys():
         return await send_embed(ctx, "No mute role in this server set.", negative=True)
     if not ctx.guild.get_role(dict[str(ctx.guild.id)]):
@@ -83,17 +82,14 @@ class Mod(commands.Cog, name="Moderator"):
     async def selfmute(self, ctx, minutes: float = 15):
         """Mute yourself for x amount of minutes."""
 
-        if await no_mute_role(ctx):
+        if await no_mute_role(ctx, self.bot):
             return
 
         if minutes < 1 or minutes > 1440:
             return await send_embed(ctx, "Invalid number of minutes; must be between 1 and 1440, inclusive",
                                     negative=True)
 
-        with open("muterole.json", "r") as f:
-            dict = json.load(f)
-
-        muterole = ctx.guild.get_role(dict[str(ctx.guild.id)])
+        muterole = ctx.guild.get_role(self.bot.muteroles[str(ctx.guild.id)])
         roles = ctx.author.roles
         roles.append(muterole)
         await ctx.author.edit(roles=roles)
@@ -109,14 +105,14 @@ class Mod(commands.Cog, name="Moderator"):
     async def createmuterole(self, ctx):
         """Create mute role."""
 
-        with open("muterole.json", "r") as file:
-            rolesDict = json.load(file)
+        if str(ctx.guild.id) in self.bot.muteroles.keys():
 
-        if str(ctx.guild.id) in rolesDict.keys():
-
-            if ctx.guild.get_role(rolesDict[str(ctx.guild.id)]):
+            if ctx.guild.get_role(self.bot.muteroles[str(ctx.guild.id)]):
                 return await send_embed(ctx, "A mute role has already been assigned to your server.",
                                         negative=True)
+
+            else:
+                del self.bot.muteroles[str(ctx.guild.id)]
 
         try:
             muterole = await ctx.guild.create_role(name="Muted")
@@ -124,10 +120,10 @@ class Mod(commands.Cog, name="Moderator"):
             for channel in ctx.guild.channels:
                 await channel.set_permissions(muterole, send_messages=False)
 
-            rolesDict[str(ctx.guild.id)] = muterole.id
+            self.bot.muteroles[str(ctx.guild.id)] = muterole.id
 
             with open("muterole.json", "w") as file:
-                json.dump(rolesDict, file, indent=4)
+                json.dump(self.bot.muteroles, file, indent=4)
 
             await send_embed(ctx, f"Mute role successfully created, "
                                   f"with permission overwrites for "
@@ -150,17 +146,14 @@ class Mod(commands.Cog, name="Moderator"):
         async def smr():
             try:
 
-                rolesDict[str(ctx.guild.id)] = role.id
+                self.bot.muteroles[str(ctx.guild.id)] = role.id
                 with open("muterole.json", "w") as file:
-                    json.dump(rolesDict, file, indent=4)
+                    json.dump(self.bot.muteroles, file, indent=4)
 
                 await ctx.send("Mute role successfully set!")
 
             except Exception as e:
                 await send_embed(ctx, str(e), negative=True)
-
-        with open("muterole.json", "r") as file:
-            rolesDict = json.load(file)
 
         if role.position > discord.utils.get(ctx.guild.me.roles, managed=True).position:
 
@@ -189,13 +182,10 @@ class Mod(commands.Cog, name="Moderator"):
         if await invalid_time(ctx, minutes):
             return
 
-        with open("muterole.json", "r") as file:
-            rolesDict = json.load(file)
-
-        if await no_mute_role(ctx):
+        if await no_mute_role(ctx, self.bot):
             return
 
-        mute_role = ctx.guild.get_role(rolesDict[str(ctx.guild.id)])
+        mute_role = ctx.guild.get_role(self.bot.muteroles[str(ctx.guild.id)])
 
         if mute_role in member.roles:
             return await send_embed(ctx, "Member already muted.", negative=True)
@@ -251,13 +241,10 @@ class Mod(commands.Cog, name="Moderator"):
     async def unmute(self, ctx, member: discord.Member, *, reason: str = None):
         """Unmutes a member."""
 
-        with open("muterole.json", "r") as file:
-            rolesDict = json.load(file)
-
-        if await no_mute_role(ctx):
+        if await no_mute_role(ctx, self.bot):
             return
 
-        mute_role = ctx.guild.get_role(rolesDict[str(ctx.guild.id)])
+        mute_role = ctx.guild.get_role(self.bot.muteroles[str(ctx.guild.id)])
 
         if not (mute_role in member.roles):
             return await send_embed(ctx, f"{str(member)} is not muted.", negative=True)
@@ -350,12 +337,12 @@ class Mod(commands.Cog, name="Moderator"):
 
         # Do mute AND ban members, do mute first
         cursor = await db.execute("Select GuildID, MemberID from Timestamps where Timeunbanned <= ? "
-                                  "and Timeunmuted != -1", (time.time(),))
+                                  "and Timeunbanned != -1", (time.time(),))
         result = await cursor.fetchall()
 
         for guild_id, member_id in result:
             guild = self.bot.get_guild(guild_id)
-            if not guild:
+            if not guild or guild.unavailable:
                 continue
 
             member = discord.Object(member_id)
@@ -378,7 +365,7 @@ class Mod(commands.Cog, name="Moderator"):
 
         roles = []
 
-        for tup in result:
+        for i, tup in enumerate(result):
 
             guild_id = tup[0]
             member_id = tup[1]
@@ -387,17 +374,20 @@ class Mod(commands.Cog, name="Moderator"):
             except IndexError:
                 role_id = None
 
-            if not self.bot.get_guild(guild_id):
+            if not self.bot.get_guild(guild_id) or self.bot.get_guild(guild_id).unavailable:
                 continue
 
-            if a != guild_id and b != member_id:
+            if (a != guild_id and b != member_id) or i == len(result)-1:
                 try:
                     member = self.bot.get_guild(a).get_member(b)
                     await member.edit(roles=roles)
                 except AttributeError:
                     pass
                 except discord.Forbidden:
-                    pass
+                    try:
+                        await member.edit(roles=[])
+                    except discord.Forbidden:
+                        pass
 
                 a, b = guild_id, member_id
                 roles = []

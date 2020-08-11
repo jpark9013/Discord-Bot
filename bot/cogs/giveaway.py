@@ -284,6 +284,8 @@ class Giveaway(commands.Cog, name="Giveaway"):
         for tup in result:
             try:
                 msg = await self.bot.get_guild(tup[1]).get_channel(tup[2]).fetch_message(tup[0])
+                if self.bot.get_guild(tup[1]).unavailable:
+                    continue
             except:
                 await db.execute("Delete from Giveaway where MessageID = ?", (tup[0],))
                 await db.commit()
@@ -308,6 +310,8 @@ class Giveaway(commands.Cog, name="Giveaway"):
         for tup in result:
             try:
                 msg = await self.bot.get_guild(tup[1]).get_channel(tup[2]).fetch_message(tup[0])
+                if self.bot.get_guild(tup[1]).unavailable:
+                    continue
             except:
                 await db.execute("Delete from Giveaway where MessageID = ?", (tup[0],))
                 await db.commit()

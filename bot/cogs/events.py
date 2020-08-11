@@ -337,6 +337,25 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
 
+        if len(before.roles) > len(after.roles):
+            a = set(before.roles)
+            b = set(after.roles)
+            c = a - b
+            try:
+                muterole = self.bot.muteroles[str(after.guild.id)]
+            except KeyError:
+                muterole = None
+            except AttributeError:
+                muterole = None
+
+            if muterole == c:
+                await db.execute("Delete from Timestamps where GuildID = ? and MemberID = ?",
+                                 (before.guild.id, before.id))
+                await db.commit()
+                await db.execute("Delete from TimestampsRoles where RoleGuildID = ? and RoleMemberID = ?",
+                                 (before.guild.id, before.id))
+                await db.commit()
+
         if before.display_name != after.display_name and before.roles != after.roles:
             if await is_logging(after.guild.id, "RoleGiven", db) and await is_logging(after.guild.id, "RoleRemoved", db) \
                     and await is_logging(after.guild.id, "NicknameChanged", db):
