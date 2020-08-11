@@ -389,6 +389,11 @@ class Mod(commands.Cog, name="Moderator"):
                     except discord.Forbidden:
                         pass
 
+                await db.execute("Delete from Timestamps where GuildID = ? and MemberID = ?", (a, b))
+                await db.commit()
+                await db.execute("Delete from TimestampsRoles where RoleGuildID = ? and RoleMemberID = ?", (a, b))
+                await db.commit()
+
                 a, b = guild_id, member_id
                 roles = []
 

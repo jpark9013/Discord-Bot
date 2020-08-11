@@ -48,6 +48,13 @@ class Polls(commands.Cog, name="Polls"):
             return await send_embed(ctx, "Invalid length of time given. Must be between 0.5 and 604800 minutes.",
                                     negative=True)
 
+        cursor = await db.execute("Select count(GuildID) from Polls where GuildID = ?", (ctx.guild.id,))
+        result = await cursor.fetchone()
+
+        if result[0] == 50:
+            return await send_embed(ctx, "Your guild already has the maximum number of available of polls at 50.",
+                                    negative=True)
+
         if not channel:
             channel = ctx.channel
 

@@ -42,6 +42,8 @@ class Tags(commands.Cog, name="Tags"):
     async def tag(self, ctx, *, tag: str):
         """Get a tag."""
 
+        tag = tag.lower()
+
         cursor = await db.execute("Select TagContent from Tags where GuildID = ? and Tag = ?",
                                   (ctx.guild.id, tag))
         result = await cursor.fetchone()
@@ -73,6 +75,8 @@ class Tags(commands.Cog, name="Tags"):
     async def create(self, ctx, tag: str, *, content: str):
         """Create a tag."""
 
+        tag = tag.lower()
+
         cursor = await db.execute("Select count(*) from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         result = await cursor.fetchone()
 
@@ -95,6 +99,8 @@ class Tags(commands.Cog, name="Tags"):
     async def edit(self, ctx, tag: str, *, content: str):
         """Edit one of your tags."""
 
+        tag = tag.lower()
+
         cursor = await db.execute("Select MemberID from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         result = await cursor.fetchone()
 
@@ -114,6 +120,8 @@ class Tags(commands.Cog, name="Tags"):
     @commands.guild_only()
     async def info(self, ctx, *, tag: str):
         """Get info on a tag."""
+
+        tag = tag.lower()
 
         cursor = await db.execute("Select MemberID, Uses, TimeCreated, rank() over (order by Uses desc) from Tags "
                                   "where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
@@ -143,6 +151,8 @@ class Tags(commands.Cog, name="Tags"):
     @commands.guild_only()
     async def claim(self, ctx, *, tag: str):
         """Claim a tag if the member has left the server or deleted their account."""
+
+        tag = tag.lower()
 
         cursor = await db.execute("Select MemberID from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         result = await cursor.fetchone()
@@ -196,6 +206,8 @@ class Tags(commands.Cog, name="Tags"):
     async def raw(self, ctx, *, tag: str):
         """Get raw content of a tag."""
 
+        tag = tag.lower()
+
         cursor = await db.execute("Select TagContent from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         result = await cursor.fetchone()
 
@@ -209,6 +221,8 @@ class Tags(commands.Cog, name="Tags"):
     @commands.guild_only()
     async def search(self, ctx, *, tag: str):
         """Search for a tag given a tag substring."""
+
+        tag = tag.lower()
 
         statement = "Select Tag, ID from Tags where GuildID = ? and Tag like '%' || ? || '%' limit 20"
 
@@ -238,6 +252,8 @@ class Tags(commands.Cog, name="Tags"):
     @commands.guild_only()
     async def delete(self, ctx, *, tag: str):
         """Delete a tag."""
+
+        tag = tag.lower()
 
         cursor = await db.execute("Select MemberID from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         result = await cursor.fetchone()
@@ -392,6 +408,8 @@ class Tags(commands.Cog, name="Tags"):
     async def toprotectedtag(self, ctx, *, tag: str):
         """Convert a tag to protected tag."""
 
+        tag = tag.lower()
+
         cursor = await db.execute("Select TagContent from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         result = await cursor.fetchone()
 
@@ -431,6 +449,8 @@ class Tags(commands.Cog, name="Tags"):
     @commands.has_permissions(administrator=True)
     async def moveprotectedtag(self, ctx, *, tag: str):
         """Convert a tag to protected tag without deleting the original tag."""
+
+        tag = tag.lower()
 
         cursor = await db.execute("Select TagContent from Tags where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         result = await cursor.fetchone()

@@ -179,3 +179,31 @@ class Misc(commands.Cog):
         """Reverse text."""
 
         await send_embed(ctx, text[::-1], info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command(aliases=["converttoimperial", "ctf", "cti"])
+    async def converttofeet(self, ctx, meters: float):
+        """Convert meters to feet and inches."""
+
+        if meters <= 0 or meters > 100000000000:
+            return await send_embed(ctx, "Invalid input.", negative=True)
+
+        inches = 39.3701 * meters
+        feet, inches = divmod(inches, 12)
+        feet = int(feet)
+        inches = round(inches, 2)
+
+        await send_embed(ctx, f"{feet} feet {inches} inches", info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command(aliases=["converttoeuropean", "cte", "ctm"])
+    async def converttometers(self, ctx, feet: int, inches: float = 0):
+        """Convert feet and inches to meters."""
+
+        if feet <= 0 or feet > 1000000000 or inches < 0 or inches > 1000000000000:
+            return await send_embed(ctx, "Invalid input.", negative=True)
+
+        inches = feet * 12 + inches
+        meters = round(inches/39.3701, 2)
+
+        await send_embed(ctx, f"{meters} meters", info=True)

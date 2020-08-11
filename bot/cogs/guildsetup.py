@@ -16,17 +16,11 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        with open("prefixes.json", "r") as prefixes_file:
-            prefixes = json.load(prefixes_file)
-
-        if str(guild.id) not in prefixes.keys():
-            prefixes[str(guild.id)] = ";"
+        if str(guild.id) not in self.bot.prefixes.keys():
+            self.bot.prefixes[str(guild.id)] = "?"
 
         with open("prefixes.json", "w") as prefixes_file:
-            json.dump(prefixes, prefixes_file, indent=4)
-
-        if str(guild.id) not in self.bot.prefixes.keys():
-            self.bot.prefixes[str(guild.id)] = ";"
+            json.dump(self.bot.prefixes, prefixes_file, indent=4)
 
         cursor = await db.execute("Select count(*) from Logging where GuildID = ?", (guild.id,))
         result = await cursor.fetchone()
@@ -58,15 +52,11 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
 
         if len(prefix) > 5:
             return await send_embed(ctx, f"You cannot have a prefix more than 5 characters long.")
-        with open("prefixes.json", "r") as prefixes_file:
-            prefixes = json.load(prefixes_file)
-
-        prefixes[str(ctx.guild.id)] = prefix
-
-        with open("prefixes.json", "w") as prefixes_file:
-            json.dump(prefixes, prefixes_file, indent=4)
 
         self.bot.prefixes[str(ctx.guild.id)] = prefix
+
+        with open("prefixes.json", "w") as prefixes_file:
+            json.dump(self.bot.prefixes, prefixes_file, indent=4)
 
         await send_embed(ctx, f"Guild prefix changed to ``{prefix}``.")
 
@@ -142,8 +132,8 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
 
         message = "Blacklisted all channels."
 
-        if result != [i.id for i in ctx.guild.text_channels]:
-            for id in (i.id for i in ctx.guild.text_channels):
+        if result != [i.id for i in ctx.guild.text_channels if i.id != ctx.channel.id]:
+            for id in (i.id for i in ctx.guild.text_channels if i.id != ctx.channel.id):
                 await db.execute("Insert or replace into Blacklist values (?, ?, ?)", (ctx.guild.id, id, None))
                 await db.commit()
 

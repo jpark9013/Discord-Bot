@@ -588,3 +588,13 @@ class Owner(commands.Cog, name="Owner"):
         cmd = self.bot.get_command(command)
         await cmd(context, *args, **kwargs)
         await send_embed(ctx, "Command executed.")
+
+    @commands.command(aliases=["dm"])
+    @commands.is_owner()
+    async def directmessage(self, ctx, member: typing.Union[discord.Member, int], *, content):
+        """DM a member."""
+
+        if isinstance(member, int):
+            member = self.bot.get_user(member) or await self.bot.fetch_user(member)
+
+        await member.send(content)

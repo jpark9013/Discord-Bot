@@ -93,7 +93,7 @@ class HumphreyGaming(commands.AutoShardedBot):
         print(self.user.id)
         print("------")
         await self.change_presence(status=discord.Status.online,
-                                   activity=discord.Game(f";help"))
+                                   activity=discord.Game(f"?help"))
 
         channel = self.get_guild(732980515807952897).get_channel(736352506669694976)
 
@@ -111,6 +111,12 @@ class HumphreyGaming(commands.AutoShardedBot):
     def can_send(self, message):
         return isinstance(message.channel, discord.DMChannel) or \
                message.channel.permissions_for(message.guild.me).send_messages
+
+    async def delete_message(self, message):
+        try:
+            return await message.delete()
+        except discord.Forbidden:
+            pass
 
     async def on_message(self, message):
         ctx = await self.get_context(message)
@@ -138,7 +144,7 @@ class HumphreyGaming(commands.AutoShardedBot):
             if result[1]:
                 sub = self.alpha_regex.sub("", message.content)
                 if sub.isupper() and len(sub) > 7:
-                    return await message.delete()
+                    await self.delete_message(message)
 
             if result[2]:
                 cursor = await self.db.execute("""Select firstTime, Times from FastMessageSpam
@@ -169,24 +175,24 @@ class HumphreyGaming(commands.AutoShardedBot):
 
             if result[3]:
                 if self.invite_regex.search(message.content):
-                    return await message.delete()
+                    await self.delete_message(message)
 
             if result[4]:
                 if self.link_regex.search(message.content):
-                    return await message.delete()
+                    await self.delete_message(message)
 
             if result[5]:
                 if len(message.mentions) >= 5:
-                    return await message.delete()
+                    await self.delete_message(message)
 
             if result[6]:
                 if len(self.emoji_regex.findall(message.content)) >= 7:
-                    return await message.delete()
+                    await self.delete_message(message)
 
             if result[7]:
                 for i in message.content.split():
                     if len(i) >= 5 and i[0] == "|" and i[1] == "|" and i[-1] == "|" and i[-2] == "|":
-                        return await message.delete()
+                        await self.delete_message(message)
 
             if result[8]:
                 if message.embeds:
@@ -209,8 +215,11 @@ class HumphreyGaming(commands.AutoShardedBot):
             except IndexError:
                 word = None
 
-            if channel_id == ctx.channel.id or word.lower() in content:
-                return await message.delete()
+            if channel_id == ctx.channel.id:
+                return
+
+            if word and word.lower() in content:
+                await self.delete_message(message)
 
         if ctx.author.id in self.blacklist["members"]:
             return

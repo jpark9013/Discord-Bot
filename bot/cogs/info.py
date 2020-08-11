@@ -209,27 +209,29 @@ class Info(commands.Cog, name="Info"):
     @tasks.loop(seconds=30)
     async def time_playing(self):
 
-        for member in self.bot.get_all_members():
-            if not member.bot:
-                for activity in member.activities:
-                    cursor = await db.execute("Select count(Time) from Activity where MemberID = ? and Thing = ?",
-                                              (member.id, activity.name))
-                    result = await cursor.fetchone()
+        await self.bot.wait_until_ready()
 
-                    try:
-                        if not result[0]:
-                            await db.execute("Insert into Activity values (?, ?, ?)", (member.id, activity.name, 30))
-                            await db.commit()
+        member = self.bot.get_guild(732980515807952897).get_member(547796508221767692)
 
-                        else:
-                            await db.execute("Update Activity set Time = Time + 30 where MemberID = ? and Thing = ?",
-                                             (member.id, activity.name))
-                            await db.commit()
+        for activity in member.activities:
+            cursor = await db.execute("Select count(Time) from Activity where MemberID = ? and Thing = ?",
+                                      (member.id, activity.name))
+            result = await cursor.fetchone()
 
-                    except sqlite3.OperationalError:
-                        pass
-                    except sqlite3.DatabaseError:
-                        pass
+            try:
+                if not result[0]:
+                    await db.execute("Insert into Activity values (?, ?, ?)", (member.id, activity.name, 30))
+                    await db.commit()
+
+                else:
+                    await db.execute("Update Activity set Time = Time + 30 where MemberID = ? and Thing = ?",
+                                     (member.id, activity.name))
+                    await db.commit()
+
+            except sqlite3.OperationalError:
+                pass
+            except sqlite3.DatabaseError:
+                pass
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command()

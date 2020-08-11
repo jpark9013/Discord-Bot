@@ -52,7 +52,9 @@ class HelpCommand(commands.Cog, name="Help"):
                 break
 
         if not name:
-            value = [f"``{i}``\n" for i in cog_names_with_commands]
+            value = [f"``{cog_names_with_commands[i]}``" for i in range(int(len(cog_names_with_commands)/2))]
+            value2 = [f"``{cog_names_with_commands[i]}``"
+                      for i in range(int(len(cog_names_with_commands)/2), len(cog_names_with_commands))]
 
             # Albert
             author = str(self.bot.get_user(439228325722849290) or await self.bot.fetch_user(439228325722849290))
@@ -70,7 +72,8 @@ class HelpCommand(commands.Cog, name="Help"):
             embed.set_footer(text=f"{prefix}support create [query] to create a new support ticket. (Don't type the "
                                   f"brackets)")
 
-            embed.add_field(name="Modules:", value="".join(value))
+            embed.add_field(name="Modules:", value="\n".join(value))
+            embed.add_field(name="Modules Con't", value="\n".join(value2))
 
             await ctx.send(embed=embed)
 
