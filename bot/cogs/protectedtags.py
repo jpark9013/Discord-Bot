@@ -65,6 +65,8 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
         """Get a protected tag. You must have the same administrative role or higher administrative role as the creator
         in order to use the tag."""
 
+        tag.replace('"', '\"')
+
         cursor = await db.execute("Select TagContent, RoleID from ProtectedTags where GuildID = ? and Tag = ?",
                                   (ctx.guild.id, tag))
         result = await cursor.fetchone()
@@ -78,7 +80,7 @@ class ProtectedTags(commands.Cog, name="Protected Tags"):
         await db.execute("Update ProtectedTags set Uses = Uses + 1 where GuildID = ? and Tag = ?", (ctx.guild.id, tag))
         await db.commit()
 
-        await ctx.send(discord.utils.escape_markdown(result[0]))
+        await ctx.send(result[0])
 
         cursor = await db.execute("Select count(*) from TagUsage where GuildID = ? and MemberID = ?",
                                   (ctx.guild.id, ctx.author.id))

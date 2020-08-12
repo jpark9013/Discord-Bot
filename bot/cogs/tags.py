@@ -42,6 +42,8 @@ class Tags(commands.Cog, name="Tags"):
     async def tag(self, ctx, *, tag: str):
         """Get a tag."""
 
+        tag.replace('"', '\"')
+
         tag = tag.lower()
 
         cursor = await db.execute("Select TagContent from Tags where GuildID = ? and Tag = ?",
