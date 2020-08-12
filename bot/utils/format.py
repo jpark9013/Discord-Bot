@@ -2,6 +2,12 @@ from discord import Embed, Colour
 
 
 async def send_embed(ctx, string, negative=False, info=False, question=False):
+
+    try:
+        string = str(string)
+    except Exception as e:
+        print(e)
+
     if negative:
         await ctx.send(embed=Embed(colour=Colour.red(), description=f"<:cancel:739585812290732103> {string}"))
 
@@ -16,6 +22,12 @@ async def send_embed(ctx, string, negative=False, info=False, question=False):
 
 
 async def to_embed(string, negative=False, info=False, question=False):
+
+    try:
+        string = str(string)
+    except Exception as e:
+        print(e)
+
     if negative:
         return Embed(colour=Colour.red(), description=f"<:cancel:739585812290732103> {string}")
 

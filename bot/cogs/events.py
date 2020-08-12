@@ -58,13 +58,11 @@ class Events(commands.Cog):
 
         if result:
             if result[0] > time.time():
-                with open("bot/muterole.json", "r") as f:
-                    try:
-                        dict = json.load(f)
-                        roleID = dict[str(member.guild.id)]
-                        await member.edit(roles=[member.guild.get_role(roleID)])
-                    except:  # Role deleted, no permission, etc.
-                        pass
+                try:
+                    roleID = self.bot.muteroles[str(member.guild.id)]
+                    await member.edit(roles=[member.guild.get_role(roleID)])
+                except:  # Role deleted, no permission, etc.
+                    pass
 
         cursor = await db.execute("Select JoinMessage, JoinMessageChannel from JLMessage where GuildID = ?",
                                   (member.guild.id,))

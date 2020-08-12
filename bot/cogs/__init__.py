@@ -7,6 +7,7 @@ from .help import HelpCommand
 from .infractions import Infractions
 from .info import Info
 from .logging import Logging
+from .math import Math
 from .misc import Misc
 from .mod import Mod
 from .music import Music
@@ -32,6 +33,7 @@ def setup(bot):
     bot.add_cog(Infractions(bot))
     bot.add_cog(Info(bot))
     bot.add_cog(Logging(bot))
+    bot.add_cog(Math(bot))
     bot.add_cog(Misc(bot))
     bot.add_cog(Mod(bot))
     # I'll add this back when I figure out how to install pynacl

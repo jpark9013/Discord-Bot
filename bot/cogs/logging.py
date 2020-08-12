@@ -1,4 +1,3 @@
-import json
 import typing
 
 import discord
@@ -111,15 +110,15 @@ class Logging(commands.Cog, name="Logging"):
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @log.command()
-    @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def channel(self, ctx, channel: discord.TextChannel):
         """Set channel for logging, which will automatically put it in the ignored channels list. If you switch channels
         for logging, the former channel for logging will still be in the ignored channels list unless you manually
         remove it."""
 
         cursor = await db.execute("Select count(*) from Logging where ChannelID = ?", (channel.id,))
-        result = await cursor.fetchall()
+        result = await cursor.fetchone()
 
         if result[0]:
             return await send_embed(ctx, "Logging is already set to that channel.", negative=True)

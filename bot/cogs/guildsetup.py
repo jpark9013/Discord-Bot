@@ -406,6 +406,9 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
          the first word of it. Lastly, this serves as a workaround to disable certain commands, but for everyone, if the
           response is none."""
 
+        trigger.replace('"', '\"')
+        message.replace('"', '\"')
+
         cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ?", (ctx.guild.id,))
         result = await cursor.fetchone()
 
@@ -434,6 +437,8 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     async def delete(self, ctx, *, trigger: str):
         """Delete a trigger for AutoRespond."""
 
+        trigger.replace('"', '\"')
+
         cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
                                   (ctx.guild.id, trigger))
         result = await cursor.fetchone()
@@ -453,6 +458,9 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     @autorespond.command()
     async def edit(self, ctx, trigger: str, *, message: str = None):
         """Edit an AutoRespond trigger."""
+
+        trigger.replace('"', '\"')
+        message.replace('"', '\"')
 
         cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
                                   (ctx.guild.id, trigger))

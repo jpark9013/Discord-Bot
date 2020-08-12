@@ -207,3 +207,10 @@ class Misc(commands.Cog):
         meters = round(inches/39.3701, 2)
 
         await send_embed(ctx, f"{meters} meters", info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def flip(self, ctx):
+        """Returns with Heads or Tails."""
+
+        await send_embed(ctx, random.choice(("Heads", "Tails")), info=True)
