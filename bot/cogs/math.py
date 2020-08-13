@@ -133,3 +133,13 @@ class Math(commands.Cog, name="Math"):
             return await send_embed(ctx, "Number(s) too high to compute.", negative=True)
 
         await send_embed(ctx, math.comb(num1, num2), info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def logarithm(self, ctx, value: float, base: float = 10):
+        """Get the log."""
+
+        if value > 10**10 or abs(base) < 0.1:
+            return await send_embed(ctx, "Number too high to compute.", negative=True)
+
+        await send_embed(ctx, math.log(value, base), info=True)

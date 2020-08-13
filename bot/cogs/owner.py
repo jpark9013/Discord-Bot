@@ -599,3 +599,20 @@ class Owner(commands.Cog, name="Owner"):
             member = self.bot.get_user(member) or await self.bot.fetch_user(member)
 
         await member.send(content)
+
+    @commands.command()
+    @commands.is_owner()
+    async def sql(self, ctx, *, query):
+        """Execute some SQL."""
+
+        if query.split()[0].lower() == "select":
+            cursor = await db.execute(query)
+            result = await cursor.fetchall()
+
+            await send_embed(ctx, result, info=True)
+
+        else:
+            await db.execute(query)
+            await db.commit()
+
+            await send_embed(ctx, "Committed to database.")

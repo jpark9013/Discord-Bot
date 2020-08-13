@@ -54,6 +54,7 @@ class Misc(commands.Cog):
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.command(aliases=["wiki"])
+    @commands.is_owner()
     async def wikipedia(self, ctx, *, text: str):
         """Search something up on wikipedia"""
 
