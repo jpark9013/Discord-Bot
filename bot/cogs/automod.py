@@ -117,6 +117,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def allcaps(self, ctx):
         """Toggle all caps detection on or off. Removes message if detected."""
 
@@ -131,6 +132,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def fastmessagespam(self, ctx):
         """Toggle fast message spam detection on or off. 15 minute mute is the punishment unless the server doesn't have
         a designated mute role or bot doesn't have permission to add roles."""
@@ -146,6 +148,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def discordinvites(self, ctx):
         """Toggle discord invite detection on or off. Removes message if detected."""
 
@@ -160,6 +163,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def links(self, ctx):
         """Toggle link detection on or off. Removes message if detected."""
 
@@ -174,6 +178,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def massmention(self, ctx):
         """Toggle mass mention detection on or off. Removes message and mutes member for 15 minutes if detected."""
 
@@ -188,6 +193,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def emojispam(self, ctx):
         """Toggle emoji spam detection on or off. Removes message if detected."""
 
@@ -202,6 +208,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def spoilers(self, ctx):
         """Toggle spoiler detection on or off. Removes message if detected."""
 
@@ -216,6 +223,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     @automod.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
+    @commands.bot_has_permissions(manage_messages=True)
     async def selfbot(self, ctx):
         """Toggle selfbot detection on or off. Bans member if detected."""
 

@@ -66,7 +66,7 @@ class Music(commands.Cog, name="Music"):
         global db
         db = self.bot.db
 
-    @commands.group()
+    @commands.group(aliases=["m"])
     @commands.guild_only()
     async def music(self, ctx):
         pass

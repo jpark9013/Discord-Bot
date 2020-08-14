@@ -36,8 +36,7 @@ def setup(bot):
     bot.add_cog(Math(bot))
     bot.add_cog(Misc(bot))
     bot.add_cog(Mod(bot))
-    # I'll add this back when I figure out how to install pynacl
-    # bot.add_cog(Music(bot))
+    bot.add_cog(Music(bot))
     bot.add_cog(Notes(bot))
     bot.add_cog(Owner(bot))
     bot.add_cog(Polls(bot))

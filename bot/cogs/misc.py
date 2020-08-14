@@ -215,3 +215,36 @@ class Misc(commands.Cog):
         """Returns with Heads or Tails."""
 
         await send_embed(ctx, random.choice(("Heads", "Tails")), info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def tolower(self, ctx, *, text: str):
+        """Put all text in lowercase."""
+
+        await send_embed(ctx, text.lower(), info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def toupper(self, ctx, *, text: str):
+        """Put all text in uppercase."""
+
+        await send_embed(ctx, text.upper(), info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def capitalize(self, ctx, *text):
+        """Capitalize some text."""
+
+        text = list(text)
+        text[0] = text[0].capitalize()
+
+        for i, v in enumerate(text):
+            if v in (".", "?", "!"):
+                try:
+                    text[i+1] = text[i+1].capitalize()
+                except IndexError:
+                    break
+            elif i != 0:
+                text[i] = text[i].lower()
+
+        await send_embed(ctx, " ".join(text), info=True)

@@ -183,12 +183,9 @@ class HumphreyGaming(commands.AutoShardedBot):
             if result[0]:
                 sub = self.alpha_regex.sub("", message.content)
                 if sub.isupper() and len(sub) > 7:
-                    await self.delete_message(message)
+                    return await self.delete_message(message)
 
             if result[1]:
-                print(result[1])
-                print(result)
-                print("------------")
                 try:
                     lst = self.fastmessagespam[ctx.guild.id]
                     dic = None
@@ -218,24 +215,24 @@ class HumphreyGaming(commands.AutoShardedBot):
 
             if result[2]:
                 if self.invite_regex.search(message.content):
-                    await self.delete_message(message)
+                    return await self.delete_message(message)
 
             if result[3]:
                 if self.link_regex.search(message.content):
-                    await self.delete_message(message)
+                    return await self.delete_message(message)
 
             if result[4]:
                 if len(message.mentions) >= 5:
-                    await self.delete_message(message)
+                    return await self.delete_message(message)
 
             if result[5]:
                 if len(self.emoji_regex.findall(message.content)) >= 7:
-                    await self.delete_message(message)
+                    return await self.delete_message(message)
 
             if result[6]:
                 for i in message.content.split():
                     if len(i) >= 5 and i[0] == "|" and i[1] == "|" and i[-1] == "|" and i[-2] == "|":
-                        await self.delete_message(message)
+                        return await self.delete_message(message)
 
             if result[7]:
                 if message.embeds:
@@ -247,19 +244,18 @@ class HumphreyGaming(commands.AutoShardedBot):
         except KeyError:
             blacklisted_channels = []
 
+        if ctx.channel.id in blacklisted_channels:
+            return
+
+        content = message.content.lower().split()
+
         try:
             words = self.blacklistchannels[ctx.guild.id]["words"]
         except KeyError:
             words = []
 
-        content = message.content.lower().split()
-
-        if ctx.channel.id in blacklisted_channels:
-            return
-
-        for word in words:
-            if word.lower() in content:
-                await self.delete_message(message)
+        if any(i.lower() in content for i in words):
+            return await self.delete_message(message)
 
         if ctx.author.id in self.blacklist["members"]:
             return

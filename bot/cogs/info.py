@@ -240,4 +240,4 @@ class Info(commands.Cog, name="Info"):
         """Get info of the current server."""
 
         cmd = self.bot.get_command("server_info")
-        await cmd(ctx)
+        await cmd(ctx, ID=ctx.guild.id)

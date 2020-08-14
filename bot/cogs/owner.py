@@ -410,16 +410,17 @@ class Owner(commands.Cog, name="Owner"):
 
     @commands.command()
     @commands.is_owner()
-    async def server_info(self, ctx, ID: int = None):
+    async def server_info(self, ctx, ID: typing.Optional[int], *, name: str = None):
         """Get info of the specified server."""
 
         if not ID:
-            guild = ctx.guild
+            guild = discord.utils.get(self.bot.guilds, name=name)
         else:
             guild = self.bot.get_guild(ID)
-            if not guild:
-                return await send_embed(ctx, "Guild with specified ID does not exist, or guild is not in bot cache.",
-                                        negative=True)
+
+        if not guild:
+            return await send_embed(ctx, "Guild with specified ID does not exist, or guild is not in bot cache.",
+                                    negative=True)
 
         embed = discord.Embed(
             colour=discord.Colour.blue(),
