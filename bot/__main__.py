@@ -1,4 +1,3 @@
-# import asyncio
 import json
 import logging
 import re
@@ -11,9 +10,6 @@ import discord
 from discord.ext import commands
 
 from bot.utils.paginator import Paginator
-
-# import youtube_dl
-
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.WARNING)
@@ -48,6 +44,7 @@ class HumphreyGaming(commands.AutoShardedBot):
 
         self.loop.run_until_complete(self.con())
         self.loop.run_until_complete(self.session())
+        self.loop.run_until_complete(self.send_to_cache())
 
         self.load_extension("bot.cogs")
         self.load_extension("jishaku")
@@ -58,6 +55,7 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.link_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
         self.emoji_regex = re.compile("<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>")
         self.alpha_regex = re.compile("[^a-zA-Z]")
+        self.token_regex = re.compile("([a-zA-Z0-9]{24}\.[a-zA-Z0-9]{6}\.[a-zA-Z0-9_\-]{27}|mfa\.[a-zA-Z0-9_\-]{84})")
 
         with open("prefixes.json", "r") as f:
             self.prefixes = json.load(f)
@@ -67,6 +65,46 @@ class HumphreyGaming(commands.AutoShardedBot):
 
         with open("muterole.json", "r") as f:
             self.muteroles = json.load(f)
+
+    async def send_to_cache(self):
+        cursor = await self.db.execute("Select * from AutoMod")
+        result = await cursor.fetchall()
+        self.automod = {i[0]: list(i[1:]) for i in result}
+
+        cursor = await self.db.execute("Select * from AutomodIgnoredChannels")
+        result = await cursor.fetchall()
+        self.automodignoredchannels = {}
+        for i in result:
+            if i[0] in self.automodignoredchannels:
+                self.automodignoredchannels[i[0]].append(i[1])
+            else:
+                self.automodignoredchannels[i[0]] = [i[1]]
+
+        cursor = await self.db.execute("Select * from Blacklist")
+        result = await cursor.fetchall()
+        self.blacklistchannels = {}
+        for i in result:
+            if i[0] in self.blacklistchannels:
+                if i[1]:
+                    self.blacklistchannels[i[0]]["channels"].append(i[1])
+                else:
+                    self.blacklistchannels[i[0]]["words"].append(i[2])
+            else:
+                if i[1]:
+                    self.blacklistchannels[i[0]] = {"words": [], "channels": [i[1]]}
+                else:
+                    self.blacklistchannels[i[0]] = {"words": [i[2]], "channels": []}
+
+        cursor = await self.db.execute("Select * from AutoRespond")
+        result = await cursor.fetchall()
+        self.autorespond = {}
+        for i in result:
+            if i[0] in self.autorespond:
+                self.autorespond[i[0]].append({i[1]: i[2]})
+            else:
+                self.autorespond[i[0]] = [{i[1]: i[2]}]
+
+        self.fastmessagespam = {}
 
     async def con(self):
         self.db = await aiosqlite.connect("Servers.db")
@@ -130,108 +168,121 @@ class HumphreyGaming(commands.AutoShardedBot):
                 return
             return await self.process_commands(message)
 
-        cursor = await self.db.execute("Select * from AutoMod where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchone()
+        try:
+            result = self.automod[ctx.guild.id]
+        except KeyError:
+            result = None
 
-        cursor = await self.db.execute("Select ChannelID from AutoModIgnoredChannels where GuildID = ?",
-                                       (ctx.guild.id,))
-        ignoredchannels = await cursor.fetchall()
-
-        ignoredchannels = [i[0] for i in ignoredchannels]
+        try:
+            ignoredchannels = self.automodignoredchannels[ctx.guild.id]
+        except KeyError:
+            ignoredchannels = []
 
         if result and ctx.guild and ctx.channel.id not in ignoredchannels:
 
-            if result[1]:
+            if result[0]:
                 sub = self.alpha_regex.sub("", message.content)
                 if sub.isupper() and len(sub) > 7:
                     await self.delete_message(message)
 
-            if result[2]:
-                cursor = await self.db.execute("""Select firstTime, Times from FastMessageSpam
-                where GuildID = ? and MemberID = ?""", (ctx.guild.id, ctx.author.id))
-                result = await cursor.fetchone()
+            if result[1]:
+                print(result[1])
+                print(result)
+                print("------------")
+                try:
+                    lst = self.fastmessagespam[ctx.guild.id]
+                    dic = None
+                    for i in lst:
+                        for j in i:
+                            if j == ctx.author.id:
+                                parent_dic = i
+                                dic = i[j]
+                                break
 
-                if not result:
-                    await self.db.execute("Insert into FastMessageSpam values (?, ?, ?, ?)",
-                                          (ctx.guild.id, ctx.author.id, time.time(), 1))
-                    await self.db.commit()
-
-                else:
-                    if time.time() <= result[0] + 5:
-
-                        if result[1] == 5:
-                            cmd = self.get_command("mute")
-                            return await cmd(ctx, member=ctx.author, reason="Automuted due to spam.")
-
-                        else:
-                            await self.db.execute("""Update FastMessageSpam set Times = Times + 1
-                            where GuildID = ? and MemberID = ?""", (ctx.guild.id, ctx.author.id))
-                            await self.db.commit()
+                    if not dic:
+                        lst.append({ctx.author.id: {"starttime": time.time(), "times": 0}})
 
                     else:
-                        await self.db.execute("Delete from FastMessageSpam where GuildID = ? and MemberID = ?",
-                                              (ctx.guild.id, ctx.author.id))
-                        await self.db.commit()
+                        if dic["starttime"] <= time.time() + 5:
+                            dic["times"] += 1
+                            if dic["times"] >= 5:
+                                self.fastmessagespam[ctx.guild.id].remove(parent_dic)
+                                cmd = self.get_command("mute")
+                                return await cmd(ctx, reason="Automuted by bot for spam.")
 
-            if result[3]:
+                        else:
+                            self.fastmessagespam[ctx.guild.id].remove(parent_dic)
+
+                except KeyError:
+                    self.fastmessagespam[ctx.guild.id] = {ctx.author.id: {"starttime": time.time(), "times": 0}}
+
+            if result[2]:
                 if self.invite_regex.search(message.content):
                     await self.delete_message(message)
 
-            if result[4]:
+            if result[3]:
                 if self.link_regex.search(message.content):
                     await self.delete_message(message)
 
-            if result[5]:
+            if result[4]:
                 if len(message.mentions) >= 5:
                     await self.delete_message(message)
 
-            if result[6]:
+            if result[5]:
                 if len(self.emoji_regex.findall(message.content)) >= 7:
                     await self.delete_message(message)
 
-            if result[7]:
+            if result[6]:
                 for i in message.content.split():
                     if len(i) >= 5 and i[0] == "|" and i[1] == "|" and i[-1] == "|" and i[-2] == "|":
                         await self.delete_message(message)
 
-            if result[8]:
+            if result[7]:
                 if message.embeds:
                     cmd = self.get_command("ban")
                     return await cmd(ctx, member=ctx.author, reason="Selfbot detected")
 
-        cursor = await self.db.execute("Select ChannelID, Word from Blacklist where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchall()
+        try:
+            blacklisted_channels = self.blacklistchannels[ctx.guild.id]["channels"]
+        except KeyError:
+            blacklisted_channels = []
+
+        try:
+            words = self.blacklistchannels[ctx.guild.id]["words"]
+        except KeyError:
+            words = []
 
         content = message.content.lower().split()
 
-        for tup in result:
+        if ctx.channel.id in blacklisted_channels:
+            return
 
-            try:
-                channel_id = tup[0]
-            except IndexError:
-                channel_id = None
-            try:
-                word = tup[1]
-            except IndexError:
-                word = None
-
-            if channel_id == ctx.channel.id:
-                return
-
-            if word and word.lower() in content:
+        for word in words:
+            if word.lower() in content:
                 await self.delete_message(message)
 
         if ctx.author.id in self.blacklist["members"]:
             return
 
-        cursor = await self.db.execute("Select Message from AutoRespond where GuildID = ? and Trigger = ?",
-                                       (ctx.guild.id, message.content))
-        result = await cursor.fetchone()
+        msg = message.content.lower()
 
-        if result:
-            if result[0] == "671511741266260530238793660166214588641633317276965513448948591":
-                return
-            return await ctx.send(result[0])
+        try:
+            a = self.autorespond[ctx.guild.id]
+            b = False
+            for i in a:
+                for j in i:
+                    if j == msg:
+                        b = True
+                        to_send = i[j]
+                        break
+        except KeyError:
+            b = False
+
+        if b:
+            try:
+                return await ctx.send(to_send)
+            except discord.errors.HTTPException:
+                pass
 
         await self.process_commands(message)
 

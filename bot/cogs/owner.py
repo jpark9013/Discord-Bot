@@ -5,7 +5,6 @@ from datetime import datetime
 
 import discord
 from discord.ext import commands, tasks
-from prettytable import PrettyTable
 
 from bot.utils.format import send_embed, to_embed
 
@@ -419,7 +418,8 @@ class Owner(commands.Cog, name="Owner"):
         else:
             guild = self.bot.get_guild(ID)
             if not guild:
-                return await send_embed(ctx, "Guild with specified ID does not exist.", negative=True)
+                return await send_embed(ctx, "Guild with specified ID does not exist, or guild is not in bot cache.",
+                                        negative=True)
 
         embed = discord.Embed(
             colour=discord.Colour.blue(),
@@ -504,7 +504,7 @@ class Owner(commands.Cog, name="Owner"):
         value = f"Nitro Tier: {guild.premium_tier}\n" \
                 f"Boosters: {guild.premium_subscription_count}\n" \
                 f"Maximum bitrate: {int(guild.bitrate_limit)} hz\n" \
-                f"File size limit: {int(guild.filesize_limit / 1000000)}MB\n" \
+                f"File size limit: {int(guild.filesize_limit / 1048576)}MB\n" \
                 f"Maximum number of emojis: {guild.emoji_limit}"
 
         embed.add_field(name="Nitro", value=value, inline=False)

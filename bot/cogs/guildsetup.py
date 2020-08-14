@@ -67,15 +67,21 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     async def blacklist(self, ctx):
         """Get a list of all blacklisted channels and words."""
 
-        cursor = await db.execute("Select ChannelID, Word from Blacklist where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchall()
+        try:
+            channels = self.bot.blacklistchannels[ctx.guild.id]["channels"]
+        except KeyError:
+            channels = []
+        try:
+            words = self.bot.blacklistchannels[ctx.guild.id]["words"]
+        except KeyError:
+            words = []
 
-        if not result:
+        if not channels and not words:
             return await send_embed(ctx, "No blacklisted channels or words.", negative=True)
 
-        channels = ", ".join(f"<#{id}>" for id in [i[0] for i in result])
+        channels = ", ".join(f"<#{id}>" for id in channels)
 
-        words = ", ".join(f"||{word}||" for word in [i[1] for i in result])
+        words = ", ".join(f"||{word}||" for word in words)
 
         if not channels:
             channels = "None"
@@ -101,17 +107,29 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         """Blacklist or unblacklist a channel based on its id or mention. Type 'all' at the end to blacklist all
         channels besides the current one. By the way this command will break very often because of SQL glitches."""
 
-        cursor = await db.execute("Select count(ChannelID) from Blacklist where GuildID = ? and ChannelID = ?",
-                                  (ctx.guild.id, channel.id))
-        result = await cursor.fetchone()
+        try:
+            result = self.bot.blacklistchannels[ctx.guild.id]["channels"]
+        except KeyError:
+            result = False
 
-        if not result[0]:
+        if not result:
             message = "Blacklisted channel."
 
+            if result is False:
+                result = [ctx.channel.id]
+            else:
+                result.append(ctx.channel.id)
+
             await db.execute("Insert into Blacklist values (?, ?, ?)", (ctx.guild.id, channel.id, None))
+            await db.commit()
 
         else:
             message = "Unblacklisted channel."
+
+            try:
+                result.remove(channel.id)
+            except:
+                return await send_embed(ctx, "Channel is not blacklisted", negative=True)
 
             await db.execute("Delete from Blacklist where ChannelID = ? and GuildID = ?", (channel.id, ctx.guild.id))
             await db.commit()
@@ -125,23 +143,26 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     async def total(self, ctx):
         """Blacklist all channels besides the current one."""
 
-        cursor = await db.execute("Select ChannelID from Blacklist where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchall()
-
-        result = [i[0] for i in result]
+        result = self.bot.blacklistchannels[ctx.guild.id]["channels"]
 
         message = "Blacklisted all channels."
 
-        if result != [i.id for i in ctx.guild.text_channels if i.id != ctx.channel.id]:
-            for id in (i.id for i in ctx.guild.text_channels if i.id != ctx.channel.id):
+        text_channels = [i.id for i in ctx.guild.text_channels if i.id != ctx.channel.id]
+
+        if result != text_channels:
+            for id in text_channels:
                 await db.execute("Insert or replace into Blacklist values (?, ?, ?)", (ctx.guild.id, id, None))
                 await db.commit()
+
+            result = text_channels
 
         else:
             message = "Unblacklisted all channels."
 
             await db.execute("Delete from Blacklist where GuildID = ?", (ctx.guild.id,))
             await db.commit()
+
+            result = []
 
         await send_embed(ctx, message)
 
@@ -154,25 +175,27 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         """Blacklist a word. Summon this command again with the same argument to unblacklist a word. You can also put
         spoilers around the word, and the bot will try to remove them when adding them to the blacklist."""
 
-        cursor = await db.execute("Select count(Word) from Blacklist where GuildID = ? and Word = ?",
-                                  (ctx.guild.id, word))
-        result = await cursor.fetchone()
+        words = self.bot.blacklistchannels[ctx.guild.id]["words"]
 
         if word[0] == "|" and word[1] == "|" and word[-1] == "|" and word[-2] == "|":
             word = word[2:-2]
 
         message = f"||``{word}``|| added to blacklist."
 
-        if not result[0]:
+        if word not in words:
             await db.execute("Insert into Blacklist values (?, ?, ?)",
                              (ctx.guild.id, None, word))
             await db.commit()
+
+            words.append(word)
 
         else:
             message = f"||``{word}``|| removed from blacklist."
 
             await db.execute("Delete from Blacklist where GuildID = ? and Word = ?", (ctx.guild.id, word))
             await db.commit()
+
+            words.remove(word)
 
         await send_embed(ctx, message)
 
@@ -407,26 +430,26 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
           response is none."""
 
         trigger.replace('"', '\"')
-        message.replace('"', '\"')
+        if message:
+            message.replace('"', '\"')
 
-        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchone()
+        try:
+            autorespond = self.bot.autorespond[ctx.guild.id]
+        except KeyError:
+            self.bot.autorespond[ctx.guild.id] = []
+            autorespond = self.bot.autorespond[ctx.guild.id]
 
-        if result[0] >= 100:
+        if len(autorespond) >= 100:
             return await send_embed(ctx, "Your server has the max autorespond messages of 100.", negative=True)
 
-        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
-                                  (ctx.guild.id, trigger))
-        result = await cursor.fetchone()
-
-        if result[0]:
-            return await send_embed(ctx, "Your server already has this autorespond trigger.", negative=True)
-
-        if not message:
-            message = "671511741266260530238793660166214588641633317276965513448948591"
+        for i in autorespond:
+            if trigger in i:
+                return await send_embed(ctx, "Your server already has this autorespond trigger.", negative=True)
 
         await db.execute("Insert into AutoRespond values (?, ?, ?)", (ctx.guild.id, trigger, message))
         await db.commit()
+
+        autorespond.append({trigger: message})
 
         await send_embed(ctx, "Created AutoRespond trigger.")
 
@@ -439,11 +462,21 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
 
         trigger.replace('"', '\"')
 
-        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
-                                  (ctx.guild.id, trigger))
-        result = await cursor.fetchone()
+        try:
+            autorespond = self.bot.autorespond[ctx.guild.id]
+        except KeyError:
+            self.bot.autorespond[ctx.guild.id] = []
+            autorespond = self.bot.autorespond[ctx.guild.id]
 
-        if not result[0]:
+        dic = False
+
+        for i in autorespond:
+            if trigger in i:
+                dic = True
+                autorespond.remove(i)
+                break
+
+        if not dic:
             return await send_embed(ctx, "No matching trigger found for this server.", negative=True)
 
         await db.execute("Delete from AutoRespond where GuildID = ? and Trigger = ?",
@@ -460,17 +493,26 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         """Edit an AutoRespond trigger."""
 
         trigger.replace('"', '\"')
-        message.replace('"', '\"')
+        if message:
+            message.replace('"', '\"')
 
-        cursor = await db.execute("Select count(*) from AutoRespond where GuildID = ? and Trigger = ?",
-                                  (ctx.guild.id, trigger))
-        result = await cursor.fetchone()
+        try:
+            autorespond = self.bot.autorespond[ctx.guild.id]
+        except KeyError:
+            self.bot.autorespond[ctx.guild.id] = []
+            autorespond = self.bot.autorespond[ctx.guild.id]
 
-        if not result[0]:
+        a = False
+
+        for i, v in enumerate(autorespond):
+            for j in v:
+                if j == trigger:
+                    a = True
+                    autorespond[i][j] = message
+                    break
+
+        if not a:
             return await send_embed(ctx, "Specified trigger does not exist.", negative=True)
-
-        if not message:
-            message = "671511741266260530238793660166214588641633317276965513448948591"
 
         await db.execute("Update AutoRespond set Message = ? where GuildID = ? and Trigger = ?",
                          (message, ctx.guild.id, trigger))
@@ -485,19 +527,21 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     async def list(self, ctx):
         """Lists all AutoRespond triggers for this server."""
 
-        cursor = await db.execute("Select Trigger from AutoRespond where GuildID = ?", (ctx.guild.id,))
-        result = await cursor.fetchall()
+        try:
+            autorespond = self.bot.autorespond[ctx.guild.id]
+        except KeyError:
+            self.bot.autorespond[ctx.guild.id] = []
+            autorespond = self.bot.autorespond[ctx.guild.id]
 
-        if not result:
+        if not autorespond:
             return await send_embed(ctx, "No AutoRespond triggers on this server.", negative=True)
 
         embeds = []
         desc = []
 
-        for i, v in enumerate(result, start=1):
-            v = v[0]
-            desc.append(f"{i}. ``{v}``")
-            if i == len(result) or i % 10 == 0:
+        for i, v in enumerate(autorespond):
+            desc.append(f"{i+1}. Trigger: ``{[j for j in v][0]}`` (Message: {[j for j in v.values()][0]})")
+            if i == len(autorespond) or i % 10 == 0:
                 embed = discord.Embed(
                     colour=discord.Colour.blue(),
                     title=f"AutoRespond triggers for {ctx.guild.name}",
