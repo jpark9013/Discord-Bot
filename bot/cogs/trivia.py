@@ -162,7 +162,7 @@ class Trivia(commands.Cog, name="Trivia"):
         else:
             await send_embed(ctx, "Answer is correct.")
 
-        if typeR and diffR and catR:
+        if typeR and diffR and catR and ctx.guild:
             cursor = await db.execute("Select count(*) from TriviaTop where GuildID = ? and MemberID = ?",
                                       (ctx.guild.id, ctx.author.id))
             result = await cursor.fetchone()

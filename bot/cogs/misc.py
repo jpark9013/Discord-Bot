@@ -15,21 +15,28 @@ class Misc(commands.Cog):
         global db
         db = self.bot.db
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     @commands.command(aliases=["randomnumber", "randomint", "randominteger"])
     async def randomnum(self, ctx, num1: int = 0, num2: int = 100):
         """Pick a random integer inclusive. Default range is from 0 to 100."""
 
-        await send_embed(ctx, str(random.randint(num1, num2)), info=True)
+        await send_embed(ctx, random.randint(num1, num2), info=True)
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     @commands.command()
     async def randomfloat(self, ctx, num1: float = 0, num2: float = 100):
         """Pick a random float. Default range is from 0 to 100."""
 
-        await send_embed(ctx, str(random.uniform(num1, num2)), info=True)
+        await send_embed(ctx, random.uniform(num1, num2), info=True)
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def pickrandom(self, ctx, *args):
+        """Pick a random choice out of given arguments."""
+
+        await send_embed(ctx, random.choice(args), info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     @commands.command()
     async def format(self, ctx, language: str, *, text: str):
         """Format a text block in a language."""
@@ -156,7 +163,7 @@ class Misc(commands.Cog):
 
         await self.bot.paginate(ctx, embeds)
 
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
     @commands.command()
     async def botinvite(self, ctx, member: discord.Member = None):
         """Generate a bot invite given the bot. Defaults to this bot."""
@@ -238,13 +245,19 @@ class Misc(commands.Cog):
         text = list(text)
         text[0] = text[0].capitalize()
 
+        do = False
+
         for i, v in enumerate(text):
-            if v in (".", "?", "!"):
+            if v[-1:] in {".", "?", "!"}:
                 try:
                     text[i+1] = text[i+1].capitalize()
+                    do = False
                 except IndexError:
                     break
             elif i != 0:
-                text[i] = text[i].lower()
+                if do:
+                    text[i] = text[i].lower()
+                else:
+                    do = True
 
         await send_embed(ctx, " ".join(text), info=True)

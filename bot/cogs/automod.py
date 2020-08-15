@@ -36,6 +36,12 @@ class AutoMod(commands.Cog, name="AutoMod"):
         global db
         db = self.bot.db
 
+    def change_setting(self, ctx, number: int):
+        try:
+            self.bot.automod[ctx.guild.id][number] = not self.bot.automod[ctx.guild.id][number]
+        except KeyError:
+            self.bot.automod[ctx.guild.id] = [False if i != number else True for i in range(8)]
+
     # Banned words command is in guildsetup, because I'm too lazy to move it here along with the rest of the DB
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.group(invoke_without_command=True)
@@ -92,15 +98,16 @@ class AutoMod(commands.Cog, name="AutoMod"):
         if not channel:
             channel = ctx.channel
 
-        cursor = await db.execute("Select count(ChannelID) from AutoModIgnoredChannels where GuildID = ?",
-                                  (ctx.guild.id,))
-        result = await cursor.fetchone()
+        a = len(self.bot.automodignoredchannels.get(ctx.guild.id, set()))
 
-        if not result[0]:
+        if not a or channel.id not in a:
             await db.execute("Insert into AutoModIgnoredChannels values (?, ?)", (ctx.guild.id, channel.id,))
             await db.commit()
 
-            self.bot.automodignoredchannels[ctx.guild.id] = [channel.id]
+            try:
+                self.bot.automodignoredchannels[ctx.guild.id].add(channel.id)
+            except KeyError:
+                self.bot.automodignoredchannels[ctx.guild.id] = {channel.id}
 
             await send_embed(ctx, "Ignored channel for automod.")
 
@@ -121,11 +128,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     async def allcaps(self, ctx):
         """Toggle all caps detection on or off. Removes message if detected."""
 
-        try:
-            self.bot.automod[ctx.guild.id][0] = not self.bot.automod[ctx.guild.id][0]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 0 else True for i in range(8)]
-
+        self.change_setting(ctx, 0)
         await sql_write(ctx, "AllCaps", "all caps")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -137,11 +140,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
         """Toggle fast message spam detection on or off. 15 minute mute is the punishment unless the server doesn't have
         a designated mute role or bot doesn't have permission to add roles."""
 
-        try:
-            self.bot.automod[ctx.guild.id][1] = not self.bot.automod[ctx.guild.id][1]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 1 else True for i in range(8)]
-
+        self.change_setting(ctx, 1)
         await sql_write(ctx, "FastMessageSpam", "fast message spam")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -152,11 +151,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     async def discordinvites(self, ctx):
         """Toggle discord invite detection on or off. Removes message if detected."""
 
-        try:
-            self.bot.automod[ctx.guild.id][2] = not self.bot.automod[ctx.guild.id][2]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 2 else True for i in range(8)]
-
+        self.change_setting(ctx, 2)
         await sql_write(ctx, "DiscordInvites", "discord invites")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -167,11 +162,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     async def links(self, ctx):
         """Toggle link detection on or off. Removes message if detected."""
 
-        try:
-            self.bot.automod[ctx.guild.id][3] = not self.bot.automod[ctx.guild.id][3]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 3 else True for i in range(8)]
-
+        self.change_setting(ctx, 3)
         await sql_write(ctx, "Links", "links")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -182,11 +173,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     async def massmention(self, ctx):
         """Toggle mass mention detection on or off. Removes message and mutes member for 15 minutes if detected."""
 
-        try:
-            self.bot.automod[ctx.guild.id][4] = not self.bot.automod[ctx.guild.id][4]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 4 else True for i in range(8)]
-
+        self.change_setting(ctx, 4)
         await sql_write(ctx, "MassMention", "mass mentions")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -197,11 +184,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     async def emojispam(self, ctx):
         """Toggle emoji spam detection on or off. Removes message if detected."""
 
-        try:
-            self.bot.automod[ctx.guild.id][5] = not self.bot.automod[ctx.guild.id][5]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 5 else True for i in range(8)]
-
+        self.change_setting(ctx, 5)
         await sql_write(ctx, "EmojiSpam", "emoji spam")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -212,11 +195,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
     async def spoilers(self, ctx):
         """Toggle spoiler detection on or off. Removes message if detected."""
 
-        try:
-            self.bot.automod[ctx.guild.id][6] = not self.bot.automod[ctx.guild.id][6]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 6 else True for i in range(8)]
-
+        self.change_setting(ctx, 6)
         await sql_write(ctx, "Spoilers", "spoilers")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -227,9 +206,5 @@ class AutoMod(commands.Cog, name="AutoMod"):
     async def selfbot(self, ctx):
         """Toggle selfbot detection on or off. Bans member if detected."""
 
-        try:
-            self.bot.automod[ctx.guild.id][7] = not self.bot.automod[ctx.guild.id][7]
-        except KeyError:
-            self.bot.automod[ctx.guild.id] = [False if i != 7 else True for i in range(8)]
-
+        self.change_setting(ctx, 7)
         await sql_write(ctx, "Selfbot", "selfbots")

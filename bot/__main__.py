@@ -66,6 +66,9 @@ class HumphreyGaming(commands.AutoShardedBot):
         with open("muterole.json", "r") as f:
             self.muteroles = json.load(f)
 
+        with open("supportTicketID.json", "r") as f:
+            self.support_ticket_number = json.load(f)
+
     async def send_to_cache(self):
         cursor = await self.db.execute("Select * from AutoMod")
         result = await cursor.fetchall()
@@ -76,9 +79,9 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.automodignoredchannels = {}
         for i in result:
             if i[0] in self.automodignoredchannels:
-                self.automodignoredchannels[i[0]].append(i[1])
+                self.automodignoredchannels[i[0]].add(i[1])
             else:
-                self.automodignoredchannels[i[0]] = [i[1]]
+                self.automodignoredchannels[i[0]] = {i[1]}
 
         cursor = await self.db.execute("Select * from Blacklist")
         result = await cursor.fetchall()
@@ -86,23 +89,23 @@ class HumphreyGaming(commands.AutoShardedBot):
         for i in result:
             if i[0] in self.blacklistchannels:
                 if i[1]:
-                    self.blacklistchannels[i[0]]["channels"].append(i[1])
+                    self.blacklistchannels[i[0]]["channels"].add(i[1])
                 else:
-                    self.blacklistchannels[i[0]]["words"].append(i[2])
+                    self.blacklistchannels[i[0]]["words"].add(i[2])
             else:
                 if i[1]:
-                    self.blacklistchannels[i[0]] = {"words": [], "channels": [i[1]]}
+                    self.blacklistchannels[i[0]] = {"words": set(), "channels": {i[1]}}
                 else:
-                    self.blacklistchannels[i[0]] = {"words": [i[2]], "channels": []}
+                    self.blacklistchannels[i[0]] = {"words": {i[2]}, "channels": set()}
 
         cursor = await self.db.execute("Select * from AutoRespond")
         result = await cursor.fetchall()
         self.autorespond = {}
         for i in result:
             if i[0] in self.autorespond:
-                self.autorespond[i[0]].append({i[1]: i[2]})
+                self.autorespond[i[0]][i[1]] = i[2]
             else:
-                self.autorespond[i[0]] = [{i[1]: i[2]}]
+                self.autorespond[i[0]] = {i[1]: i[2]}
 
         self.fastmessagespam = {}
 
@@ -168,15 +171,8 @@ class HumphreyGaming(commands.AutoShardedBot):
                 return
             return await self.process_commands(message)
 
-        try:
-            result = self.automod[ctx.guild.id]
-        except KeyError:
-            result = None
-
-        try:
-            ignoredchannels = self.automodignoredchannels[ctx.guild.id]
-        except KeyError:
-            ignoredchannels = []
+        result = self.automod.get(ctx.guild.id, None)
+        ignoredchannels = self.automodignoredchannels.get(ctx.guild.id, set())
 
         if result and ctx.guild and ctx.channel.id not in ignoredchannels:
 
@@ -186,32 +182,26 @@ class HumphreyGaming(commands.AutoShardedBot):
                     return await self.delete_message(message)
 
             if result[1]:
-                try:
-                    lst = self.fastmessagespam[ctx.guild.id]
-                    dic = None
-                    for i in lst:
-                        for j in i:
-                            if j == ctx.author.id:
-                                parent_dic = i
-                                dic = i[j]
-                                break
-
-                    if not dic:
-                        lst.append({ctx.author.id: {"starttime": time.time(), "times": 0}})
-
-                    else:
-                        if dic["starttime"] <= time.time() + 5:
-                            dic["times"] += 1
-                            if dic["times"] >= 5:
-                                self.fastmessagespam[ctx.guild.id].remove(parent_dic)
-                                cmd = self.get_command("mute")
-                                return await cmd(ctx, reason="Automuted by bot for spam.")
-
-                        else:
-                            self.fastmessagespam[ctx.guild.id].remove(parent_dic)
-
-                except KeyError:
+                if ctx.guild.id not in self.fastmessagespam:
                     self.fastmessagespam[ctx.guild.id] = {ctx.author.id: {"starttime": time.time(), "times": 0}}
+                dic = self.fastmessagespam[ctx.guild.id]
+
+                if ctx.author.id not in dic:
+                    self.fastmessagespam[ctx.guild.id][ctx.author.id] = {"starttime": time.time(), "times": 0}
+                dic = dic[ctx.author.id]
+
+                if dic["starttime"] <= time.time() + 5:
+                    dic["times"] += 1
+                    if dic["times"] >= 5:
+                        del self.fastmessagespam[ctx.guild.id][ctx.author.id]
+                        cmd = self.get_command("mute")
+                        try:
+                            return await cmd(ctx, reason="Automuted by bot for spam.")
+                        except discord.Forbidden:
+                            return
+
+                else:
+                    del self.fastmessagespam[ctx.guild.id][ctx.author.id]
 
             if result[2]:
                 if self.invite_regex.search(message.content):
@@ -239,22 +229,16 @@ class HumphreyGaming(commands.AutoShardedBot):
                     cmd = self.get_command("ban")
                     return await cmd(ctx, member=ctx.author, reason="Selfbot detected")
 
-        try:
-            blacklisted_channels = self.blacklistchannels[ctx.guild.id]["channels"]
-        except KeyError:
-            blacklisted_channels = []
+        blacklist_guild = self.blacklistchannels.get(ctx.guild.id, {})
+        blacklisted_channels = blacklist_guild.get("channels", set())
+        blacklisted_words = blacklist_guild.get("words", set())
 
         if ctx.channel.id in blacklisted_channels:
             return
 
         content = message.content.lower().split()
 
-        try:
-            words = self.blacklistchannels[ctx.guild.id]["words"]
-        except KeyError:
-            words = []
-
-        if any(i.lower() in content for i in words):
+        if any(i.lower() in content for i in blacklisted_words):
             return await self.delete_message(message)
 
         if ctx.author.id in self.blacklist["members"]:
@@ -262,23 +246,12 @@ class HumphreyGaming(commands.AutoShardedBot):
 
         msg = message.content.lower()
 
+        a = self.autorespond.get(ctx.guild.id, {})
+        respond = a.get(msg, None)
         try:
-            a = self.autorespond[ctx.guild.id]
-            b = False
-            for i in a:
-                for j in i:
-                    if j == msg:
-                        b = True
-                        to_send = i[j]
-                        break
-        except KeyError:
-            b = False
-
-        if b:
-            try:
-                return await ctx.send(to_send)
-            except discord.errors.HTTPException:
-                pass
+            return await ctx.send(respond)
+        except discord.errors.HTTPException:
+            pass
 
         await self.process_commands(message)
 

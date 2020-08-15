@@ -23,8 +23,7 @@ class Support(commands.Cog, name="Support"):
     async def create(self, ctx, *, suggestion):
         """Create a new support ticket"""
 
-        with open("supportTicketID.json", "r") as f:
-            num = json.load(f)
+        num = self.bot.support_ticket_number
 
         channel = self.bot.get_guild(721194829366951997).get_channel(735612451839672340)
 
@@ -41,3 +40,5 @@ class Support(commands.Cog, name="Support"):
 
         with open("supportTicketID.json", "w") as f:
             json.dump(num+1, f)
+
+        self.bot.support_ticket_number += 1
