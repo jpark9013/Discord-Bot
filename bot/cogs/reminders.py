@@ -116,7 +116,7 @@ class Reminders(commands.Cog, name="Reminders"):
         for tup in result:
             try:
                 member = self.bot.get_user(tup[0]) or await self.bot.fetch_user(tup[0])
-                await member.send(embed=to_embed(tup[1], info=True))
+                await member.send(tup[1])
 
             except:  # Member deleted account, member doesn't share server with bot etc.
                 pass

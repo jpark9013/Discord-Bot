@@ -190,13 +190,13 @@ class HumphreyGaming(commands.AutoShardedBot):
                     self.fastmessagespam[ctx.guild.id][ctx.author.id] = {"starttime": time.time(), "times": 0}
                 dic = dic[ctx.author.id]
 
-                if dic["starttime"] <= time.time() + 5:
+                if dic["starttime"]+5 >= time.time():
                     dic["times"] += 1
                     if dic["times"] >= 5:
                         del self.fastmessagespam[ctx.guild.id][ctx.author.id]
                         cmd = self.get_command("mute")
                         try:
-                            return await cmd(ctx, reason="Automuted by bot for spam.")
+                            return await cmd(ctx, member=ctx.author, reason="Automuted by bot for spam.")
                         except discord.Forbidden:
                             return
 

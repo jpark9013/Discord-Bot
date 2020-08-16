@@ -403,7 +403,8 @@ class Owner(commands.Cog, name="Owner"):
         """Nick the bot."""
 
         try:
-            await self.bot.get_member(self.bot.id).edit(nick=nick)
+            await ctx.me.edit(nick=nick)
+            await send_embed(ctx, "Changed nickname.")
 
         except Exception as e:
             await send_embed(ctx, str(e), negative=True)

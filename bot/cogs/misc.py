@@ -1,6 +1,7 @@
 import json
 import random
 import statistics
+import time
 
 import discord
 import wikipedia
@@ -147,7 +148,7 @@ class Misc(commands.Cog):
         """Returns your ping history."""
 
         cursor = await db.execute("Select Value from Ping where MemberID = ?", (ctx.author.id,))
-        result = await cursor.fetchone()
+        result = await cursor.fetchall()
 
         if not result:
             return await send_embed(ctx, "You do not have any pings sent yet.", negative=True)
@@ -158,7 +159,7 @@ class Misc(commands.Cog):
         for i, v in enumerate(reversed(result), start=1):
             resultstr.append(f"{i}. {round(v)} ms")
             if i % 10 == 0 or i == len(result):
-                embeds.append(await to_embed("\n".join(resultstr), info=True))
+                embeds.append(to_embed("\n".join(resultstr), info=True))
                 resultstr = []
 
         await self.bot.paginate(ctx, embeds)
@@ -261,3 +262,10 @@ class Misc(commands.Cog):
                     do = True
 
         await send_embed(ctx, " ".join(text), info=True)
+
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+    @commands.command()
+    async def unixtime(self, ctx):
+        """Get number of seconds since UNIX epoch."""
+
+        await send_embed(ctx, time.time(), info=True)

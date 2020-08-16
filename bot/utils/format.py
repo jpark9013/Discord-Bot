@@ -21,7 +21,7 @@ async def send_embed(ctx, string, negative=False, info=False, question=False):
         await ctx.send(embed=Embed(colour=Colour.green(), description=f"<:check:739585649744674896> ***{string}***"))
 
 
-async def to_embed(string, negative=False, info=False, question=False):
+def to_embed(string, negative=False, info=False, question=False):
 
     try:
         string = str(string)
