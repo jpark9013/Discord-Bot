@@ -517,8 +517,9 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         embeds = []
         desc = []
 
-        for i, v in enumerate(autorespond):
-            desc.append(f"{i+1}. Trigger: ``{[j for j in v][0]}`` (Message: {[j for j in v.values()][0]})")
+        # Enumerating through keys
+        for i, v in enumerate(autorespond, start=1):
+            desc.append(f"{i}. Trigger: ``{v}`` (Message: ``{autorespond[v]}``)")
             if i == len(autorespond) or i % 10 == 0:
                 embed = discord.Embed(
                     colour=discord.Colour.blue(),
@@ -527,5 +528,6 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
                 )
 
                 embeds.append(embed)
+                desc = []
 
         await self.bot.paginate(ctx, embeds)
