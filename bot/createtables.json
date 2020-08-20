@@ -7,7 +7,7 @@
   "create table if not exists Reminders(MemberID int, Reminder text not null, Time int not null, ID text not null)",
   "create table if not exists Infractions(GuildID int not null, MemberID int not null, Type text not null, Reason text, Time text not null, ModeratorID int not null, Minutes int, ID int not null)",
   "create table if not exists Logging(GuildID int not null primary key, ChannelID int, MemberJoined bit, MemberLeft bit, MemberBanned bit, MemberUnbanned bit, MessageEdited bit, MessageDeleted bit, BulkMessageDeletion bit, ChannelCreated bit, ChannelDeleted bit, RoleCreated bit, RoleDeleted bit, RoleUpdated bit, RoleGiven bit, RoleRemoved bit, NicknameChanged bit,  ModeratorCommandUsed bit, MemberJoinedVC bit, MemberLeftVC bit, MemberMovedToVC bit, Invites bit, Enabled bit, ShowIcon bit)",
-  "create table if not exists LoggingIgnoredChannels(GuildID int not null, IgnoredChannelID int not null unique)",
+  "create table if not exists LoggingIgnoredChannels(GuildID int not null, IgnoredChannelID int not null unique, foreign key (GuildID) references Logging (GuildID))",
   "create table if not exists Ping(MemberID int not null, Value int not null)",
   "create table if not exists ToDo(MemberID int not null, Thing text not null, ID int not null)",
   "create table if not exists Notes(MemberID int not null, Note text not null, ID int not null)",
@@ -22,5 +22,14 @@
   "create table if not exists Giveaway(MessageID int not null primary key, GuildID int, TimeEnding int, Members int, Ended bit, ChannelID int)",
   "create table if not exists TriviaTop(GuildID int not null, MemberID int not null, Correct float, Total float, Score float, primary key(GuildID, MemberID))",
   "create table if not exists AutoRespond(GuildID int not null, Trigger text not null, Message text, primary key(GuildID, Trigger))",
-  "create table if not exists Polls(GuildID int not null, ChannelID int not null, MessageID int not null primary key, TopNumber int not null, TimeEnding int not null, Option1 text, Option2 text, Option3 text, Option4 text, Option5 text, Option6 text, Option7 text, Option8 text, Option9 text, Option10 text)"
+  "create table if not exists Polls(GuildID int not null, ChannelID int not null, MessageID int not null primary key, TopNumber int not null, TimeEnding int not null, Option1 text, Option2 text, Option3 text, Option4 text, Option5 text, Option6 text, Option7 text, Option8 text, Option9 text, Option10 text)",
+  "create table if not exists Servers(AuthorID int not null, GuildID int not null primary key, Name text not null, Description text, Icon text, Banner text, Splash text, AFKChannel text, AFKTimeout int, VerificationLevel int, NotificationLevel int, ContentFilter int, Token text not null)",
+  "create table if not exists MemberListBans(GuildID int not null, MemberID int not null, Ban bit not null, primary key(GuildID, MemberID), foreign key (GuildID) references Servers (GuildID))",
+  "create table if not exists TextChannels(GuildID int not null, Name text not null, Topic text, Position int not null, NSFW bit not null, SyncPermissions bit not null, Category text, SlowmodeDelay int not null, ID int not null primary key, foreign key (GuildID) references Servers (GuildID))",
+  "create table if not exists VoiceChannels(GuildID int not null, Name text not null, Bitrate int not null, UserLimit int not null, Position int not null, SyncPermissions bit not null, Category text, ID int not null primary key, foreign key (GuildID) references Servers (GuildID))",
+  "create table if not exists CategoryChannels(GuildID int not null, Name text not null, Position int not null, NSFW bit not null, ID int not null primary key, foreign key (GuildID) references Servers (GuildID))",
+  "create table if not exists Roles(GuildID int not null, Name text not null, Permissions int not null, Colour int not null, Hoist bit not null, Mentionable bit not null, Position int not null, primary key (GuildID, Name), foreign key(GuildID) references Servers (GuildID))",
+  "create table if not exists Overwrites(GuildID int not null, Name text not null, RoleName text, MemberID int, Allow int, Deny int, Role bit not null, Type int not null, primary key(GuildID, Name, RoleName, MemberID, Type), foreign key (GuildID) references Servers (GuildID))",
+  "create table if not exists Emojis(GuildID int not null, Name text not null, Image text not null, ID int not null primary key, foreign key (GuildID) references Servers (GuildID))",
+  "create table if not exists MemberRoles(GuildID int not null, MemberID int not null, Role text not null, primary key(GuildID, MemberID, Role), foreign key (GuildID) references Servers (GuildID))"
 ]
