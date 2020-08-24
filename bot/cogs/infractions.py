@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 class Infraction:
@@ -104,3 +104,7 @@ class Infractions(commands.Cog, name="Infractions"):
         await db.commit()
 
         await send_embed(ctx, "Infraction removed from member.")
+
+
+def setup(bot):
+    bot.add_cog(Infractions(bot))

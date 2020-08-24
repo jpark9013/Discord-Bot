@@ -3,7 +3,7 @@ import typing
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 """
 Logging key: 
@@ -373,3 +373,7 @@ class Logging(commands.Cog, name="Logging"):
         """Toggle invites logging on or off."""
 
         await write(ctx, "Invites", "invites")
+
+
+def setup(bot):
+    bot.add_cog(Logging(bot))

@@ -5,7 +5,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed, to_embed
+from utils.format import send_embed, to_embed
 
 
 class Guild_Setup(commands.Cog, name="Guild Setup"):
@@ -268,10 +268,10 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
         await send_embed(ctx, "Set leave message.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @leavemessage.command()
+    @leavemessage.command(aliases=["channel"])
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def channel(self, ctx, channel: discord.TextChannel):
+    async def _channel(self, ctx, channel: discord.TextChannel):
         """Set a channel for sending join messages."""
 
         cursor = await db.execute("Select count(*) from JLMessage where GuildID = ?", (ctx.guild.id,))
@@ -531,3 +531,7 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
                 desc = []
 
         await self.bot.paginate(ctx, embeds)
+
+
+def setup(bot):
+    bot.add_cog(Guild_Setup(bot))

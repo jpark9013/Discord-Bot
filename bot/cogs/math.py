@@ -4,7 +4,7 @@ import numpy as np
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 class Math(commands.Cog, name="Math"):
@@ -143,3 +143,7 @@ class Math(commands.Cog, name="Math"):
             return await send_embed(ctx, "Number too high to compute.", negative=True)
 
         await send_embed(ctx, math.log(value, base), info=True)
+
+
+def setup(bot):
+    bot.add_cog(Math(bot))

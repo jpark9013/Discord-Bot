@@ -5,7 +5,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.format import send_embed, to_datetime
+from utils.format import send_embed, to_datetime
 
 
 def check(ctx):
@@ -241,3 +241,7 @@ class Info(commands.Cog, name="Info"):
 
         cmd = self.bot.get_command("server_info")
         await cmd(ctx, ID=ctx.guild.id)
+
+
+def setup(bot):
+    bot.add_cog(Info(bot))

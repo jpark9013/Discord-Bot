@@ -6,7 +6,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.format import send_embed, to_datetime
+from utils.format import send_embed, to_datetime
 
 
 def custom_datetime(seconds):
@@ -338,3 +338,7 @@ class Giveaway(commands.Cog, name="Giveaway"):
             except discord.Forbidden:
                 await db.execute("Delete from Giveaway where MessageID = ?", (msg.id,))
                 await db.commit()
+
+
+def setup(bot):
+    bot.add_cog(Giveaway(bot))

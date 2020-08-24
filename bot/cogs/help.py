@@ -4,7 +4,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed, to_embed
+from utils.format import send_embed, to_embed
 
 
 class HelpCommand(commands.Cog, name="Help"):
@@ -34,10 +34,10 @@ class HelpCommand(commands.Cog, name="Help"):
             OWNER_COG_NAMES.append("owner")
 
             if not ctx.guild or ctx.guild.id != 732980515807952897:
-                OWNER_COG_NAMES.append("spreadSheets")
+                OWNER_COG_NAMES.append("spreadsheets")
 
         OWNER_COMMAND_NAMES = [i.qualified_name for i in self.bot.walk_commands() if i.cog and
-                               i.cog.qualified_name in OWNER_COG_NAMES]
+                               i.cog.qualified_name.lower() in OWNER_COG_NAMES]
 
         cog_names_with_commands = [i for i in cogs.keys() if cogs[i].get_commands() and i not in OWNER_COG_NAMES]
         command_names = [i.qualified_name for i in self.bot.walk_commands() if
@@ -124,7 +124,6 @@ class HelpCommand(commands.Cog, name="Help"):
                     title=f"{prefix}{command.qualified_name} {command.signature}",
                     description=description
                 )
-
                 embed.set_author(name=f"Category: {command.cog.qualified_name}")
                 embed.set_footer(text=f"Do {prefix}help [command name] [subcommand name] to get help on a subcommand!")
 
@@ -202,3 +201,7 @@ class HelpCommand(commands.Cog, name="Help"):
         embed.set_footer(text=datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
 
         await self.bot.get_guild(732980515807952897).get_channel(736352506669694976).send(embed=embed)
+
+
+def setup(bot):
+    bot.add_cog(HelpCommand(bot))

@@ -6,7 +6,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 class Polls(commands.Cog, name="Polls"):
@@ -161,3 +161,7 @@ class Polls(commands.Cog, name="Polls"):
                 await cmd(ctx, msg)
             except Exception as e:
                 print(e)
+
+
+def setup(bot):
+    bot.add_cog(Polls(bot))

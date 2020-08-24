@@ -5,7 +5,7 @@ import random
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.format import send_embed, to_embed
+from utils.format import send_embed, to_embed
 
 
 class Reminders(commands.Cog, name="Reminders"):
@@ -129,3 +129,7 @@ class Reminders(commands.Cog, name="Reminders"):
             pass
         except sqlite3.DatabaseError:
             pass
+
+
+def setup(bot):
+    bot.add_cog(Reminders(bot))

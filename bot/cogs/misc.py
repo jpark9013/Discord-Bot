@@ -3,11 +3,12 @@ import random
 import statistics
 import time
 
+from aiocodeforces.client import Client
 import discord
 import wikipedia
 from discord.ext import commands
 
-from bot.utils.format import send_embed, to_embed
+from utils.format import send_embed, to_embed, shorten
 
 
 class Misc(commands.Cog):
@@ -66,19 +67,6 @@ class Misc(commands.Cog):
     async def wikipedia(self, ctx, *, text: str):
         """Search something up on wikipedia"""
 
-        def convert_large(textc):
-            if len(textc) > 1024:
-                textc = ("".join(list(textc)[:1024])).split()
-                if len(textc[-1]) >= 3:
-                    textc[-1] = "..."
-                    return " ".join(textc)
-                else:
-                    del textc[-1]
-                    textc[-1] = "..."
-                    return " ".join(textc)
-            else:
-                return textc
-
         try:
             page = wikipedia.page(text)
             embed = discord.Embed(
@@ -88,7 +76,7 @@ class Misc(commands.Cog):
             )
 
             embed.set_thumbnail(url=page.images[0])
-            embed.add_field(name="Summary", value=convert_large(wikipedia.summary(text)))
+            embed.add_field(name="Summary", value=shorten(wikipedia.summary(text)))
             await ctx.send(embed=embed)
 
         except wikipedia.DisambiguationError as e:
@@ -109,7 +97,7 @@ class Misc(commands.Cog):
                 )
 
                 embed.set_thumbnail(url=page.images[0])
-                embed.add_field(name="Summary", value=convert_large(wikipedia.summary(wikipedia.suggest(text))))
+                embed.add_field(name="Summary", value=shorten(wikipedia.summary(wikipedia.suggest(text))))
                 await ctx.send(embed=embed)
 
             except Exception as e:
@@ -269,3 +257,7 @@ class Misc(commands.Cog):
         """Get number of seconds since UNIX epoch."""
 
         await send_embed(ctx, time.time(), info=True)
+
+
+def setup(bot):
+    bot.add_cog(Misc(bot))

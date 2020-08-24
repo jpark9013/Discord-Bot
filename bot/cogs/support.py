@@ -4,7 +4,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 class Support(commands.Cog, name="Support"):
@@ -42,3 +42,7 @@ class Support(commands.Cog, name="Support"):
             json.dump(num+1, f)
 
         self.bot.support_ticket_number += 1
+
+
+def setup(bot):
+    bot.add_cog(Support(bot))

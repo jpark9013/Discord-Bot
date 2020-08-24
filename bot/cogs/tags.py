@@ -3,7 +3,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 def can_change(ctx, memberID):
@@ -484,3 +484,7 @@ class Tags(commands.Cog, name="Tags"):
         await ctx.invoke(cmd, tag=tag, content=result[0])
 
         await send_embed(ctx, "Tag moved to Protected Tag.")
+
+
+def setup(bot):
+    bot.add_cog(Tags(bot))

@@ -634,3 +634,7 @@ class Events(commands.Cog):
             await member.edit(roles=list(set(roles)))
         except:
             pass
+
+
+def setup(bot):
+    bot.add_cog(Events(bot))

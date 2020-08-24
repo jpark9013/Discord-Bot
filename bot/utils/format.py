@@ -88,3 +88,14 @@ def to_datetime(seconds: int, day=True, week=False):
             return f"{h}h {m}m {s}s"
         else:
             return f"{m}m {s}s"
+
+
+def shorten(text: str, length: int = 1024):
+    if len(text) > length:
+        text = ("".join(list(text)[:1024])).split()
+        if len(text[-1]) < 3:
+            del text[-1]
+        text[-1] = "..."
+        return " ".join(text)
+
+    return text

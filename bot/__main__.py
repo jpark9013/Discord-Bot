@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 import time
 from datetime import datetime
@@ -9,7 +10,7 @@ import aiosqlite
 import discord
 from discord.ext import commands
 
-from bot.utils.paginator import Paginator
+from utils.paginator import Paginator
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.WARNING)
@@ -46,7 +47,9 @@ class HumphreyGaming(commands.AutoShardedBot):
         self.loop.run_until_complete(self.session())
         self.loop.run_until_complete(self.send_to_cache())
 
-        self.load_extension("bot.cogs")
+        for f in os.listdir("./cogs"):
+            if f.endswith(".py") and str(f) != "__init__.py":
+                self.load_extension(f"cogs.{f[:-3]}")
         self.load_extension("jishaku")
 
         self.startTime = time.time()
@@ -68,6 +71,9 @@ class HumphreyGaming(commands.AutoShardedBot):
 
         with open("supportTicketID.json", "r") as f:
             self.support_ticket_number = json.load(f)
+
+        with open("codeforces.json", "r") as f:
+            self.codeforces = json.load(f)
 
     async def send_to_cache(self):
         cursor = await self.db.execute("Select * from AutoMod")

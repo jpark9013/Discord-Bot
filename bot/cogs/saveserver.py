@@ -5,7 +5,11 @@ from collections import OrderedDict
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed, to_embed
+from utils.format import send_embed, to_embed
+
+
+def check(ctx):
+    return ctx.author == ctx.guild.owner
 
 
 class SaveServer(commands.Cog, name="Save Server"):
@@ -26,9 +30,6 @@ class SaveServer(commands.Cog, name="Save Server"):
         await db.commit()
 
     async def check_unique(self, ctx):
-        if ctx.author != ctx.guild.owner:
-            return await send_embed(ctx, "You are not the server owner.", negative=True)
-
         names = [i.name for i in ctx.guild.roles]
         if list(OrderedDict.fromkeys(names)) != names:
             return await send_embed(ctx, "Role names must all be unique in order to save the server.", negative=True)
@@ -169,6 +170,7 @@ class SaveServer(commands.Cog, name="Save Server"):
     @commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(administrator=True)
+    @commands.check(check)
     async def saveserver(self, ctx):
         """Save the server in the DB."""
 
@@ -195,8 +197,6 @@ class SaveServer(commands.Cog, name="Save Server"):
             if i != ctx.guild.default_role and not i.managed:
                 await i.delete(reason="Deleted during loadserver.")
         for i in ctx.guild.channels:
-            await i.delete(reason="Deleted during loadserver.")
-        for i in ctx.guild.emojis:
             await i.delete(reason="Deleted during loadserver.")
 
     async def get_bytes(self, url):
@@ -252,12 +252,13 @@ class SaveServer(commands.Cog, name="Save Server"):
                 pass
 
     async def load_categories(self, ctx, id):
-        cursor = await db.execute("Select Name, Position, NSFW from CategoryChannels where ID = ?", (id,))
+        cursor = await db.execute("Select Name, Position, NSFW from CategoryChannels where GuildID = ?", (id,))
         result = await cursor.fetchall()
 
         categories = {}
         for n, p, nn in result:
-            a = await ctx.guild.create_category(name=n, nn=bool(nn))
+            a = await ctx.guild.create_category(name=n, reason="Created during loadserver.")
+            await a.edit(nsfw=bool(nn), reason="Edited during loadserver.")
             categories[n] = a
         # Wait until after they are all created
         for tup in result:
@@ -299,7 +300,8 @@ class SaveServer(commands.Cog, name="Save Server"):
                 bitrate=b,
                 user_limit=u,
                 sync_permissions=s,
-                category=discord.utils.get(ctx.guild.categories, name=c)
+                category=discord.utils.get(ctx.guild.categories, name=c),
+                reason="Created during loadserver."
             )
             voice_channels[n] = a
         for tup in result:
@@ -345,14 +347,18 @@ class SaveServer(commands.Cog, name="Save Server"):
                 po[c] = {b: p_o}
 
         for i in po:
-            await i.edit(overwrites=po[i])
+            try:
+                await i.edit(overwrites=po[i])
+            except discord.Forbidden:
+                pass
 
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
     @commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(administrator=True)
+    @commands.check(check)
     async def loadserver(self, ctx):
-        """Load the server. Will wipe the server, however. Only bans will remain."""
+        """Load the server. Will wipe the server, however. Only bans and emojis will remain."""
 
         cmd = self.bot.get_command("loadserver")
 
@@ -368,8 +374,6 @@ class SaveServer(commands.Cog, name="Save Server"):
             cmd.reset_cooldown(ctx)
             return await send_embed(ctx, "Timed out.", negative=True)
 
-        await self.wipe_server(ctx)
-
         cursor = await db.execute("Select count(*), Name, Description, Icon, Banner, Splash, AFKChannel, AFKTimeout, "
                                   "VerificationLevel, NotificationLevel, ContentFilter, GuildID from Servers "
                                   "where Token = ?", (msg.content,))
@@ -378,6 +382,8 @@ class SaveServer(commands.Cog, name="Save Server"):
         if not result[0]:
             cmd.reset_cooldown(ctx)
             return await send_embed(ctx, "Saved server with token does not exist.", negative=True)
+
+        await self.wipe_server(ctx)
 
         id = result[11]
         icon = await self.get_bytes(result[3])
@@ -466,3 +472,95 @@ class SaveServer(commands.Cog, name="Save Server"):
             embed.add_field(name=n, value=value, inline=False)
 
         await ctx.send(embed=embed)
+
+    @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
+    @commands.command()
+    async def massdm(self, ctx, token: str, *, message: str = None):
+        """Mass dm the users with an optional message."""
+
+        cmd = self.bot.get_command("massdm")
+
+        if len(message) > 1950:
+            cmd.reset_cooldown(ctx)
+            await send_embed(ctx, "Message length cannot be any longer than 1950 characters.", negative=True)
+
+        query = """
+                Select MemberID from MemberListBans where GuildID = 
+                (Select GuildID from Servers where Token = ?)
+                """
+        cursor = await db.execute(query, (token,))
+        result = await cursor.fetchall()
+
+        if not result:
+            cmd.reset_cooldown(ctx)
+            await send_embed(ctx, "No members found to DM.", negative=True)
+
+        invite = await ctx.guild.create_invite(reason="Permanent invite created during mass DM.")
+
+        c = 0
+        for i in result:
+            user = self.bot.get_user(i[0]) or await self.bot.fetch_user(i[0])
+            try:
+                await user.send(f"{message}\n{str(invite)}")
+                c += 1
+            except AttributeError:
+                pass
+            except discord.HTTPException:
+                pass
+
+        await send_embed(ctx, f"Mass DM sent successfully to **{c}** out of **{len(result)}** possible members.",
+                         info=True)
+
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.command()
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.guild_only()
+    @commands.check(check)
+    async def loadbans(self, ctx, token: str):
+        """Load a server's bans. Will not wipe the current server's bans."""
+
+        cmd = self.bot.get_command("loadbans")
+        query = """
+                Select MemberID from MemberListBans where 
+                GuildID = (Select GuildID from Servers where Token = ?)
+                and Ban = ?
+                """
+        cursor = await db.execute(query, (token, True))
+        result = await cursor.fetchall()
+
+        if not result:
+            cmd.reset_cooldown(ctx)
+
+        c = 0
+        for i in result:
+            try:
+                await ctx.guild.ban(discord.Object(i[0]))
+                c += 1
+            except discord.HTTPException:
+                pass
+
+        await send_embed(ctx, f"Successfully banned **{c}** out of **{len(result)}** possible members.", info=True)
+
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.command()
+    @commands.check(check)
+    @commands.guild_only()
+    @commands.bot_has_permissions(administrator=True)
+    async def wipeserver(self, ctx):
+        """Wipe the server completely. Only bans and emojis will remain."""
+
+        await send_embed(ctx, "Are you sure you want to do this? Reply 'Yes', caps sensitive without the quotes, within "
+                              "2 minutes.")
+        try:
+            msg = await self.bot.wait_for("message", check=lambda x: x.author == ctx.author and x.channel == ctx.channel)
+        except asyncio.TimeoutError:
+            return await send_embed(ctx, "Timed out.", negative=True)
+
+        if msg.content != "Yes":
+            return await send_embed(ctx, "Cancelled command.")
+
+        await self.wipe_server(ctx)
+
+
+def setup(bot):
+    bot.add_cog(SaveServer(bot))

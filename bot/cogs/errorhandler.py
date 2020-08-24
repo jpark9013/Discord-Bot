@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed, to_embed
+from utils.format import send_embed, to_embed
 
 
 class ErrorHandler(commands.Cog):
@@ -54,3 +54,7 @@ class ErrorHandler(commands.Cog):
                 embed.set_footer(text=f"Command/Content: {ctx.message.content} • Channel: DMChannel")
 
             await channel.send(embed=embed)
+
+
+def setup(bot):
+    bot.add_cog(ErrorHandler(bot))

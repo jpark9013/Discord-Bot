@@ -5,7 +5,7 @@ import aiotrivia
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 class Trivia(commands.Cog, name="Trivia"):
@@ -276,3 +276,7 @@ class Trivia(commands.Cog, name="Trivia"):
         embed.set_author(name=str(member), icon_url=str(member.avatar_url))
 
         await ctx.send(embed=embed)
+
+
+def setup(bot):
+    bot.add_cog(Trivia(bot))

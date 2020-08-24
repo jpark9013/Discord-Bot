@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 class Notes(commands.Cog, name="Notes"):
@@ -86,3 +86,7 @@ class Notes(commands.Cog, name="Notes"):
         await db.commit()
 
         await send_embed(ctx, "All notes cleared.")
+
+
+def setup(bot):
+    bot.add_cog(Notes(bot))

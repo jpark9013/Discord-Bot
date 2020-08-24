@@ -6,7 +6,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.format import send_embed, to_embed
+from utils.format import send_embed, to_embed
 
 
 class Owner(commands.Cog, name="Owner"):
@@ -226,8 +226,14 @@ class Owner(commands.Cog, name="Owner"):
         """Reload an extension."""
 
         try:
-            self.bot.reload_extension(f"{name}.cogs")
-            await send_embed(ctx, f"Reloaded extension with name ``{name}``.")
+            if name == "all":
+                extensions = self.bot.extensions.copy()
+                for i in extensions:
+                    self.bot.reload_extension(i)
+                await send_embed(ctx, "Reloaded all extensions.")
+            else:
+                self.bot.reload_extension(f"cogs.{name}")
+                await send_embed(ctx, f"Reloaded extension with name ``{name}``.")
 
         except Exception as e:
             await send_embed(ctx, str(e), negative=True)
@@ -238,7 +244,7 @@ class Owner(commands.Cog, name="Owner"):
         """Load an extension."""
 
         try:
-            self.bot.load_extension(f"{name}.cogs")
+            self.bot.load_extension(f"cogs.{name}")
             await send_embed(ctx, f"Loaded extension with name ``{name}``.")
 
         except Exception as e:
@@ -250,7 +256,7 @@ class Owner(commands.Cog, name="Owner"):
         """Unload an extension."""
 
         try:
-            self.bot.unload_extension(f"{name}.cogs")
+            self.bot.unload_extension(f"cogs.{name}")
             await send_embed(ctx, f"Unloaded extension with name ``{name}``.")
 
         except Exception as e:
@@ -618,3 +624,7 @@ class Owner(commands.Cog, name="Owner"):
             await db.commit()
 
             await send_embed(ctx, "Committed to database.")
+
+
+def setup(bot):
+    bot.add_cog(Owner(bot))

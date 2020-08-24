@@ -8,7 +8,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands, tasks
 
-from bot.utils.format import to_embed, send_embed
+from utils.format import to_embed, send_embed
 
 
 async def no_mute_role(ctx, bot):
@@ -176,7 +176,7 @@ class Mod(commands.Cog, name="Moderator"):
         if await insufficient_permissions(ctx, member):
             return
 
-        if member.guild_permissions.manage_roles or member.guild_permissions.administrator:
+        if member.guild_permissions.manage_roles or member.guild_permissions.administrator or member.bot:
             return await send_embed(ctx, "Target member permissions too high to mute.", negative=True)
 
         if await invalid_time(ctx, minutes):
@@ -637,3 +637,7 @@ class Mod(commands.Cog, name="Moderator"):
         await write_infractions(ctx, member, "Warn", reason=reason)
 
         await send_embed(ctx, f"Warned {member.mention}.")
+
+
+def setup(bot):
+    bot.add_cog(Mod(bot))

@@ -6,7 +6,7 @@ import discord
 import youtube_dl
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 # Suppress errors
 youtube_dl.utils.bug_reports_message = lambda: " "
@@ -174,3 +174,7 @@ class Music(commands.Cog, name="Music"):
 
         elif ctx.voice_client.is_playing():
             ctx.voice_client.stop()
+
+
+def setup(bot):
+    bot.add_cog(Music(bot))

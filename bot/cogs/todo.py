@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 class Todo(commands.Cog, name="Todo"):
@@ -12,7 +12,7 @@ class Todo(commands.Cog, name="Todo"):
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.group(invoke_without_command=True)
-    async def Todo(self, ctx):
+    async def todo(self, ctx):
         """Access your To-do list."""
 
         cursor = await db.execute("Select Thing from Todo where MemberID = ?", (ctx.author.id,))
@@ -42,7 +42,7 @@ class Todo(commands.Cog, name="Todo"):
         await self.bot.paginate(ctx, embeds)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @Todo.command(aliases=["add"])
+    @todo.command(aliases=["add"])
     async def create(self, ctx, *, string: str):
         """Create a note."""
 
@@ -53,7 +53,7 @@ class Todo(commands.Cog, name="Todo"):
         await send_embed(ctx, "Created new to-do.")
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @Todo.command(aliases=["remove"])
+    @todo.command(aliases=["remove"])
     async def delete(self, ctx, ID: int):
         """Remove a note based on its ID."""
 
@@ -72,7 +72,7 @@ class Todo(commands.Cog, name="Todo"):
         await send_embed(ctx, "Note deleted.")
 
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @Todo.command()
+    @todo.command()
     async def clear(self, ctx):
         """Clear your note list."""
 
@@ -86,3 +86,7 @@ class Todo(commands.Cog, name="Todo"):
         await db.commit()
 
         await send_embed(ctx, "All Todo cleared.")
+
+
+def setup(bot):
+    bot.add_cog(Todo(bot))

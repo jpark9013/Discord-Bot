@@ -4,7 +4,7 @@ import time
 import discord
 from discord.ext import commands
 
-from bot.utils.format import send_embed
+from utils.format import send_embed
 
 
 async def sql_write(ctx, column, string):
@@ -208,3 +208,7 @@ class AutoMod(commands.Cog, name="AutoMod"):
 
         self.change_setting(ctx, 7)
         await sql_write(ctx, "Selfbot", "selfbots")
+
+
+def setup(bot):
+    bot.add_cog(AutoMod(bot))
