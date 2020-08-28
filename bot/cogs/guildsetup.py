@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import typing
 from datetime import datetime
 
@@ -505,8 +506,8 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    @autorespond.command(aliases=["all"])
-    async def list(self, ctx):
+    @autorespond.command(name="list")
+    async def _list(self, ctx):
         """Lists all AutoRespond triggers for this server."""
 
         autorespond = self.bot.autorespond.get(ctx.guild.id, {})
@@ -531,6 +532,151 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
                 desc = []
 
         await self.bot.paginate(ctx, embeds)
+
+    async def put_roles_in_database(self, ctx, roles):
+        if not roles:
+            return
+
+        rr = self.bot.restricted_roles
+        if ctx.guild.id not in rr:
+            rr[ctx.guild.id] = {i.id for i in roles}
+        else:
+            rr[ctx.guild.id] = {i.id for i in roles}.union(rr[ctx.guild.id])
+
+        statement = ", ".join(["(?, ?)" for i in range(len(roles))])
+        query = f"""Insert or replace into RestrictedRoles values {statement}"""
+        value = []
+        for i in roles:
+            value.extend((ctx.guild.id, i.id))
+        await db.execute(query, value)
+        await db.commit()
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.group(invoke_without_command=True, name="restrict")
+    @commands.has_permissions(administrator=True)
+    async def _restrict(self, ctx, roles: commands.Greedy[discord.Role] = None):
+        """Restrict a certain role(s). This will also disable Autorespond for those roles."""
+
+        if not roles:
+            return await send_embed(ctx, "Did not provide roles.", negative=True)
+
+        if ctx.guild.owner != ctx.author:
+            for i in reversed(ctx.author.roles):
+                if i.permissions.administrator:
+                    role = i
+                    break
+            for i in roles:
+                if i.permissions.administrator and i.position >= role.position:
+                    return await send_embed(ctx, "You do not have permission to do that.", negative=True)
+        await self.put_roles_in_database(ctx, roles)
+
+        await send_embed(ctx, f"Restricted roles.", info=True)
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @_restrict.command(name="all")
+    @commands.has_permissions(administrator=True)
+    async def _all(self, ctx):
+        """Restrict all roles under your own role. Administrator included. This will also disable Autorespond for those
+        roles."""
+
+        role = None
+        for i in reversed(ctx.author.roles):
+            if i.permissions.administrator:
+                role = i
+                break
+        try:
+            roles = {i for i in ctx.guild.roles if role.position > i.position or not i.administrator}
+        except AttributeError:
+            roles = {i for i in ctx.guild.roles}
+        await self.put_roles_in_database(ctx, roles)
+
+        await send_embed(ctx, "Restricted all roles.")
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @_restrict.command(name="list")
+    @commands.has_permissions(administrator=True)
+    async def _list(self, ctx):
+        """Get a list of all restricted roles."""
+
+        try:
+            lst = self.bot.restricted_roles[ctx.guild.id]
+        except KeyError:
+            return await send_embed(ctx, "No restricted roles in this guild.", negative=True)
+        embeds = []
+        description = []
+        lst = {ctx.guild.get_role(i) for i in lst if ctx.guild.get_role(i)}
+        if not lst:
+            return await send_embed(ctx, "No restricted roles.")
+        for i, v in enumerate(lst, start=1):
+            description.append(f"{i}: {v.mention} (ID: {v.id})")
+            if i % 10 == 0 or i == len(lst):
+                embed = discord.Embed(
+                    colour=discord.Colour.blue(),
+                    title=f"Restricted Roles for {ctx.guild.name}",
+                    description="\n".join(description)
+                )
+                embeds.append(embed)
+                description = []
+
+        return await self.bot.paginate(ctx, embeds)
+
+    async def remove_roles_from_database(self, ctx, roles):
+        rr = self.bot.restricted_roles
+        if ctx.guild.id not in rr or not roles:
+            return
+        rr[ctx.guild.id] = rr[ctx.guild.id].difference({i.id for i in roles})
+
+        statement = ", ".join(["?" for i in range(len(roles))])
+        query = f"""Delete from RestrictedRoles where RoleID in ({statement})"""
+        await db.execute(query, [i.id for i in roles])
+        await db.commit()
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.group(invoke_without_command=True)
+    @commands.has_permissions(administrator=True)
+    async def unrestrict(self, ctx, roles: commands.Greedy[discord.Role] = None):
+        """Unrestrict roles."""
+
+        if not roles:
+            return await send_embed(ctx, "Did not provide roles.", negative=True)
+
+        if ctx.guild.owner != ctx.author:
+            for i in reversed(ctx.author.roles):
+                if i.permissions.administrator:
+                    role = i
+                    break
+            for i in roles:
+                if i.permissions.administrator and i.position >= role.position:
+                    return await send_embed(ctx, "You do not have permission to do that.", negative=True)
+
+        await self.remove_roles_from_database(ctx, roles)
+        await send_embed(ctx, "Unrestricted roles.")
+
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @unrestrict.command(name="all")
+    @commands.has_permissions(administrator=True)
+    async def __all(self, ctx):
+        """Unrestrict all roles. Won't work if a role is restricted above or equal to yours and it has admin perms."""
+
+        try:
+            roles = self.bot.restricted_roles[ctx.guild.id]
+        except KeyError:
+            return await send_embed(ctx, "No roles have been restricted yet.", negative=True)
+        _roles = []
+        if ctx.guild.owner != ctx.author:
+            for i in reversed(ctx.author.roles):
+                if i.permissions.administrator:
+                    role = i
+                    break
+            for i in roles:
+                r = ctx.guild.get_role(i)
+                if r:
+                    _roles.append(r)
+                    if r.permissions.administrator and r.position >= role.position:
+                        return await send_embed(ctx, "You do not have permission to do this.", negative=True)
+
+        await self.remove_roles_from_database(ctx, _roles)
+        await send_embed(ctx, "Unrestricted all roles.")
 
 
 def setup(bot):

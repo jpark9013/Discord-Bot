@@ -169,7 +169,7 @@ class SaveServer(commands.Cog, name="Save Server"):
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
     @commands.command()
     @commands.guild_only()
-    @commands.bot_has_permissions(administrator=True)
+    @commands.bot_has_permissions(ban_members=True)
     @commands.check(check)
     async def saveserver(self, ctx):
         """Save the server in the DB."""

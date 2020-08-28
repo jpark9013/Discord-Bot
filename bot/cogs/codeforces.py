@@ -36,11 +36,8 @@ class Codeforces(commands.Cog, name="Codeforces"):
 
     @tasks.loop(minutes=2)
     async def get_contests(self):
-        print("hello")
         if self.first:
-            print("here")
             self.contests = await self.cfclient.get_contest_list()
-            print("ok")
             return
 
         temp = set(self.contests)
@@ -58,11 +55,13 @@ class Codeforces(commands.Cog, name="Codeforces"):
 
         for i in self.bot.codeforces:
             user = self.bot.get_user(i)
-            try:
-                for j in embeds:
+            for j in embeds:
+                try:
                     await user.send(embed=j)
-            except AttributeError:
-                pass
+                except AttributeError:
+                    pass
+                except discord.HTTPException:
+                    pass
 
 
 def setup(bot):

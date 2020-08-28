@@ -80,7 +80,7 @@ class Misc(commands.Cog):
             await ctx.send(embed=embed)
 
         except wikipedia.DisambiguationError as e:
-            description = "\n".join(e.options)
+            description = shorten("\n".join(e.options), length=2048)
             embed = discord.Embed(colour=discord.Colour.blue(),
                                   title=f"{text.capitalize()} may refer to:",
                                   description=description

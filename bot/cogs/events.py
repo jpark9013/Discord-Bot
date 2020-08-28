@@ -438,7 +438,7 @@ class Events(commands.Cog):
             return
 
         if await is_logging(ctx.guild.id, "ModeratorCommandUsed", db):
-            if ctx.command.cog.qualified_name == "Mod":
+            if ctx.command.cog and ctx.command.cog.qualified_name == "Mod":
                 embed = discord.Embed(
                     colour=discord.Colour.blue(),
                     description=f"**Used ``{ctx.command.name}`` command in <#{ctx.channel.id}>:**\n"

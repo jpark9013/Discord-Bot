@@ -31,5 +31,6 @@
   "create table if not exists Roles(GuildID int not null, Name text not null, Permissions int not null, Colour int not null, Hoist bit not null, Mentionable bit not null, Position int not null, primary key (GuildID, Name), foreign key(GuildID) references Servers (GuildID))",
   "create table if not exists Overwrites(GuildID int not null, Name text not null, RoleName text, MemberID int, Allow int, Deny int, Role bit not null, Type int not null, primary key(GuildID, Name, RoleName, MemberID, Type), foreign key (GuildID) references Servers (GuildID))",
   "create table if not exists Emojis(GuildID int not null, Name text not null, Image text not null, ID int not null primary key, foreign key (GuildID) references Servers (GuildID))",
-  "create table if not exists MemberRoles(GuildID int not null, MemberID int not null, Role text not null, primary key(GuildID, MemberID, Role), foreign key (GuildID) references Servers (GuildID))"
+  "create table if not exists MemberRoles(GuildID int not null, MemberID int not null, Role text not null, primary key(GuildID, MemberID, Role), foreign key (GuildID) references Servers (GuildID))",
+  "create table if not exists RestrictedRoles(GuildID int not null, RoleID int not null, primary key(GuildID, RoleID))"
 ]

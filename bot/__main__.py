@@ -115,6 +115,15 @@ class HumphreyGaming(commands.AutoShardedBot):
 
         self.fastmessagespam = {}
 
+        cursor = await self.db.execute("Select * from RestrictedRoles")
+        result = await cursor.fetchall()
+        self.restricted_roles = {}
+        for g, r in result:
+            if g not in self.restricted_roles:
+                self.restricted_roles[g] = {r}
+            else:
+                self.restricted_roles[g].add(r)
+
     async def con(self):
         self.db = await aiosqlite.connect("Servers.db")
 
@@ -135,6 +144,8 @@ class HumphreyGaming(commands.AutoShardedBot):
     async def on_ready(self):
         """Everything that follows this is mostly initialization stuff."""
 
+        await self.wait_until_ready()
+
         print("Logged in as")  # Didn't use \n on purpose
         print(self.user.name)
         print(self.user.id)
@@ -148,10 +159,7 @@ class HumphreyGaming(commands.AutoShardedBot):
             colour=discord.Colour.green(),
             description="Bot is online."
         )
-
         embed.set_footer(text=f"Time: {datetime.now().strftime('%m/%d/%Y, %H:%M:%S')}")
-
-        await self.wait_until_ready()
 
         await channel.send(embed=embed)
 
@@ -172,15 +180,18 @@ class HumphreyGaming(commands.AutoShardedBot):
                 (ctx.guild and ctx.guild.id in self.blacklist["guilds"]):
             return
 
+        ignoredchannels = self.automodignoredchannels.get(ctx.guild.id, set())
+        if ctx.channel.id in ignoredchannels:
+            return
+
         if not ctx.guild:
             if ctx.author.id in self.blacklist["members"]:
                 return
             return await self.process_commands(message)
 
         result = self.automod.get(ctx.guild.id, None)
-        ignoredchannels = self.automodignoredchannels.get(ctx.guild.id, set())
 
-        if result and ctx.guild and ctx.channel.id not in ignoredchannels:
+        if result and ctx.guild:
 
             if result[0]:
                 sub = self.alpha_regex.sub("", message.content)
@@ -250,8 +261,16 @@ class HumphreyGaming(commands.AutoShardedBot):
         if ctx.author.id in self.blacklist["members"]:
             return
 
-        msg = message.content.lower()
+        if ctx.guild.id in self.restricted_roles and ctx.author != ctx.guild.owner:
+            restricted = True
+            for i in ctx.author.roles:
+                if i.id not in self.restricted_roles[ctx.guild.id] and i != ctx.guild.default_role:
+                    restricted = False
+                    break
+            if restricted:
+                return
 
+        msg = message.content.lower()
         a = self.autorespond.get(ctx.guild.id, {})
         respond = a.get(msg, None)
         try:

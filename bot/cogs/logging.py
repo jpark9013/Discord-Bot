@@ -59,13 +59,13 @@ class Logging(commands.Cog, name="Logging"):
         cursor = await db.execute("Select Enabled from Logging where GuildID = ?", (ctx.guild.id,))
         result = await cursor.fetchone()
 
-        if result == ():
+        if not result:
             await db.execute("Insert into Logging values "
                              "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                              (ctx.guild.id, None, False, False, False, False, False, False, False, False, False, False,
                               False, False, False, False, False, False, False, False, False, False, True, False))
             await db.commit()
-            await send_embed(ctx, "Turned logging off.")
+            await send_embed(ctx, "Turned logging on.")
 
         elif not result[0]:
             await db.execute("Update Logging set Enabled = ? where GuildID = ?", (1, ctx.guild.id))

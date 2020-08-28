@@ -94,7 +94,7 @@ class Mod(commands.Cog, name="Moderator"):
         roles.append(muterole)
         await ctx.author.edit(roles=roles)
 
-        await sql_write(ctx, ctx.author, minutes, mute=True)
+        await sql_write(ctx, ctx.author, minutes*60, mute=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
@@ -190,7 +190,7 @@ class Mod(commands.Cog, name="Moderator"):
         if mute_role in member.roles:
             return await send_embed(ctx, "Member already muted.", negative=True)
 
-        await sql_write(ctx, member, minutes, mute=True)
+        await sql_write(ctx, member, minutes*60, mute=True)
 
         await write_infractions(ctx, member, "Mute", minutes, reason)
 
@@ -231,7 +231,7 @@ class Mod(commands.Cog, name="Moderator"):
 
         await ctx.guild.ban(member, reason=reason)
         await action_message_send(minutes, ctx, member, "banned")
-        await sql_write(ctx, member, minutes, ban=True)
+        await sql_write(ctx, member, minutes*60, ban=True)
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.has_permissions(manage_roles=True)
