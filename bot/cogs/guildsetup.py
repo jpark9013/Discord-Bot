@@ -585,8 +585,8 @@ class Guild_Setup(commands.Cog, name="Guild Setup"):
                 role = i
                 break
         try:
-            roles = {i for i in ctx.guild.roles if role.position > i.position or not i.administrator}
-        except AttributeError:
+            roles = {i for i in ctx.guild.roles if role.position > i.position or not i.permissions.administrator}
+        except:
             roles = {i for i in ctx.guild.roles}
         await self.put_roles_in_database(ctx, roles)
 
